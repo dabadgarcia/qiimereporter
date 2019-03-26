@@ -1,5 +1,6 @@
 [![Anaconda-Server Badge](https://anaconda.org/dabadgarcia/qiimereporter/badges/version.svg)](https://anaconda.org/dabadgarcia/qiimereporter)  
 [![Anaconda-Server Badge](https://anaconda.org/dabadgarcia/qiimereporter/badges/latest_release_date.svg)](https://anaconda.org/dabadgarcia/qiimereporter)
+
 <br>
 
 # QiimeReporter 
@@ -20,7 +21,6 @@ One step pipeline for amplicon sequence analysis.
 ## What is QiimeReporter?
 
 QiimeReporter is a straightforward pipeline for the analysis of amplicon sequences directly from raw Illumina paired-end data. It integrates the most common [Qiime2](https://github.com/qiime2/qiime2) commands with [R](https://cran.r-project.org/) in order to create a final html report that can be opened in any web browser and easily shareable between researchers.  
-
 
 <br>
 
@@ -57,8 +57,7 @@ QiimeReporter is a pipeline that requires a few dependencies to work:
   * [R](https://cran.r-project.org/)
     * R packages: [ggtree](https://bioconductor.org/packages/release/bioc/html/ggtree.html), [knitr](https://cran.r-project.org/web/packages/knitr/index.html), [plotly](https://cran.r-project.org/web/packages/plotly/index.html),[rmarkdown](https://cran.r-project.org/web/packages/rmarkdown/index.html)
   * [SILVA](https://www.arb-silva.de/)
-  
-  
+   
 <br>
 
 ## Usage
@@ -138,8 +137,6 @@ Once the analysis is finished, QiimeReporter summarizes the results in a interac
 If you use QiimeReporter before publication is released, please cite as:  
   
 David Abad and Marta Hernandez. QiimeReporter. (2019) https://github.com/dabadgarcia/qiimereporter
-
-<br>
 
 The dependencies described in [this section](#required-dependencies) are the backbone of QiimeReporter and users are encouraged to cite them when using it.
 
