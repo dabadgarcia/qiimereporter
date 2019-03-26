@@ -1,0 +1,1272 @@
+#! /bin/bash
+
+#This script is made to run the most common Qiime 2 commands and to generate a report automatically. 	
+	
+start=`date +%s`
+
+# Define hms() function to measure the amount of time elapsed during the analysis
+hms()
+{
+  # Convert SECONDS to Hours, Minutes, Seconds
+  local SECONDS H M S MM 
+  SECONDS=${1:-0}
+  let S=${SECONDS}%60
+  let MM=${SECONDS}/60 # Total number of minutes
+  let M=${MM}%60
+  let H=${MM}/60
+  
+  #Display "01h02m03s" format
+  [ "$H" -gt "0" ] && printf "%02d%s" $H "h"
+  [ "$M" -gt "0" ] && printf "%02d%s" $M "m"
+  printf "%02d%s\n" $S "s" 
+}
+
+VERSION="1.0"
+
+QIIMEREPORTER=$0
+while [ -h "$QIIMEREPORTER" ]; do # resolve $QIIMEREPORTER until the file is no longer a symlink
+  QIIMEREPORTERDIR="$( cd -P "$( dirname "$0" )" && pwd )"
+  QIIMEREPORTER="$(readlink "$QIIMEREPORTER")"
+  [[ $QIIMEREPORTER != /* ]] && QIIMEREPORTER="$QIIMEREPORTERDIR/$QIIMEREPORTER" # if $QIIMEREPORTER is a symlink, resolve it relative to the path where the symlink file was located
+done
+QIIMEREPORTERDIR="$( cd -P "$( dirname "$QIIMEREPORTER" )" && pwd )"
+
+## QIIMEREPORTERREPORT=$QIIMEREPORTERDIR/QIIMEREPORTER-report
+
+# VARIABLES
+COLOR=
+CPUS=1
+DATABASE=$QIIMEREPORTER/../db/silva/silva-132-99-nb-classifier-V3-V4.qza
+DATE="$( date +"%Y-%m-%d" )"
+DODIV=1
+DOHEAT=1
+DONET=1
+DOPCOA=1
+DORAR=1
+DOREP=1
+INPUT=
+METADATA=
+MULTI=0
+OUTPUT=
+OUTWD=
+TAB="$(printf '\t')"
+TITLEFILE=
+TITLE=
+TRUNF=0
+TRUNR=0
+
+usage () {
+cat << EOF
+
+This is QiimeReporter version $VERSION
+
+Developed by David Abad <https://github.com/dabadgarcia/qiimereporter>
+
+usage: $0 <options>
+
+OBLIGATORY OPTIONS:
+	-i/--input 	Path to the directory where the raw reads are located
+	-m/--metadata	Path to the file with the metadata regarding the samples
+			The file must have an specific organization for the program to work
+			If you don't have any or you would like to have an example or extra information, 
+			please type: 
+			$0 example-metadata
+	-o/--output	Path and name of the output directory
+
+OTHER OPTIONS:
+	--citation	Show citation
+	--color 	Multivariate analysis color from sample-metadata
+	-d/--database 	Path to database, must be .qza file (default SILVA132)
+	-f/--forward	Truncates length of the forward read (default='0')
+	-h/--help	Show this help
+	--no-diversity	Excludes the diversity indexes from the report
+	--no-heatmap	Excludes the heatmap from the report
+	--no-network	Excludes the network from the report
+	--no-pcoa	Excludes the pcoa from the report
+	--no-rarefactionExcludes the rarefaction curves from the report
+	--multivariate	Includes other multivariate analysis in the report (NMDS, DCA, PCA, RCA)
+	--report-only	If report files already present, generates the html document 
+	-r/--reverse	Truncates length of the reverse read (default='0')
+	-t/--threads	Number of threads to use (default=$CPUS) <integer>
+	--title		Path to a file containing the title of the project that will be used as title in the report
+			Avoid using special characters. QiimeReporter will use a default title if this option is not used
+	-v/--version	Show version
+
+For further explanation please visit: https://github.com/dabadgarcia/qiimereporter
+
+EOF
+}
+
+if [ $# == 0 ]; then
+	usage
+	exit 1
+fi
+
+# GENERATING EXAMPLE METADATA FILE
+
+if [ "$1" == "example-metadata" ]
+then
+cat << EOF > sample-metadata.tsv
+#SampleID${TAB}BarcodeSequence${TAB}LinkerPrimerSequence${TAB}Description${TAB}
+#q2:types${TAB}categorical${TAB}categorical${TAB}categorical${TAB}
+Sample1${TAB}${TAB}${TAB}Description1
+Sample2${TAB}${TAB}${TAB}Description2
+EOF
+
+cat << EOF
+
+An example "sample-metadata.tsv" has been created in the current directory
+Modify it in your preferred text editor by respecting the organization of the example:
+	- Columns must be tab separated
+	- First row: 
+		- First column must me called "#SampleID" and harbor samples names (avoid special characters)
+		- Second column must be called "BarcodeSequence" and should be left blank
+		- Third column must be called "LinkerPrimerSequence" and should be left blank
+		- Fourth (and so on) columns are descriptive. They are no needed for the program but the information will be used and appear in the report. Add as much as needed
+	- Second row: 
+		- First column must me called "#q2:types" and specifies type of variable for each column
+		- Columns should be clasiffied into "categorical" if they are non-numeric values and "numeric" if the column consists only of numbers. Missing data (i.e. empty cells) are supported in categorical columns as well as numeric columns
+EOF
+        exit 1
+fi
+
+# VARIABLE OPTIONS
+
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+ARGS="$1"
+
+case $ARGS in
+        --citation)
+            echo -e "\n If using QiimeReporter, please cite:"
+	    echo -e "\n Abad, D., Hernandez, M. QiimeReporter. (2019) GitHub (https://github.com/dabadgarcia/qiimereporter)\n"
+            exit 1
+            ;;
+	--color)
+	    if [ "$2" ]; then
+                COLOR=$2
+                shift 2
+            else
+                echo -e '\nERROR: "--color" requires an argument\n'
+                exit 1
+            fi
+            ;;
+	-d|--database)
+	    if [ "$2" ]; then
+                DATABASE=$2
+                shift 2
+                if [ ! -e "$DATABASE" ]
+                    then echo -e "\nERROR: $DATABASE doesn't exist! Please check \n"
+                    exit 1
+                fi
+                if [ ! -s "$DATABASE" ]
+                    then echo -e "\nERROR: Size of $DATABASE is 0! Please check \n"
+                    exit 1
+                fi
+            else
+                echo -e '\nERROR: "-d|--database" requires an argument\n'
+                exit 1
+            fi
+            ;; 
+	-f|--forward)
+            if [ "$2" ]; then
+                if [ "$2" -eq "$2"  ] 2>/dev/null ; then
+                    TRUNF=$2
+                    shift 2
+                else
+                        echo -e '\nERROR: "--forward" requires a numeric argument'
+                        echo -e "argument parsed: $2 \n"
+                        exit 1
+                fi
+            else
+                echo -e '\nERROR: "--forward" requires a numeric argument\n'
+            fi
+            ;;
+	-h|-\?|--help)
+	    usage
+	    exit 1
+	    ;;
+	-i|--input)
+	    if [ "$2" ]; then
+                INPUT=$2
+                shift 2
+            else
+                echo -e '\nERROR: "-i/--input" requires an argument\n'
+                exit 1
+            fi
+            ;;
+ 	-m|--metadata)
+	    if [ "$2" ]; then
+                METADATA=$2
+                shift 2
+                if [ ! -e "$METADATA" ]
+                    then echo -e "\nERROR: $METADATA doesn't exist! Please check \n"
+                    exit 1
+                fi
+                if [ ! -s "$METADATA" ]
+                    then echo -e "\nERROR: Size of $METADATA is 0! Please check \n"
+                    exit 1
+                fi
+            else
+                echo -e '\nERROR: "-m/--metadata" requires an argument\n'
+                exit 1
+            fi
+            ;;
+        --no-diversity)
+            DODIV=0
+            shift
+            ;;        
+        --no-heatmap)
+            DOHEAT=0
+            shift
+            ;;
+	--no-network)
+            DONET=0
+            shift
+            ;;
+	--no-pcoa)
+            DOPCOA=0
+            shift
+            ;;
+        --no-rarefaction)
+            DORAR=0
+            shift
+            ;;        
+	--multivariate)
+            MULTI=1
+            shift
+            ;;
+	-o|--output)
+	    if [ "$2" ]; then
+                OUTPUT=$2
+                shift 2
+                if [ -d "$OUTPUT" ]
+                    then echo -e "\nERROR: $OUTPUT already exist! Please check \n"
+                    exit 1
+                fi
+            else
+                echo -e '\nERROR: "-o/--output" requires an argument\n'
+                exit 1
+            fi
+            ;;
+	--report-only)
+            DOREP=0
+            shift
+            ;;
+	-r|--reverse)
+            if [ "$2" ]; then
+                if [ "$2" -eq "$2"  ] 2>/dev/null ; then
+                    TRUNR=$2
+                    shift 2
+                else
+                        echo -e '\nERROR: "--reverse" requires a numeric argument'
+                        echo -e "argument parsed: $2 \n"
+                        exit 1
+                fi
+            else
+                echo -e '\nERROR: "--reverse" requires a numeric argument\n'
+            fi
+            ;;
+	-t|--threads)
+	    if [ "$2" ]; then    
+		if [ "$2" -eq "$2"  ] 2>/dev/null ; then
+                    CPUS=$2
+                    shift 2
+                else
+                        echo -e '\nERROR: "-t/--threads" requires a numeric argument'
+                        echo -e "argument parsed: $2 \n"
+                        exit 1
+                fi
+	    else
+		echo -e '\nERROR: "-t/--threads" requires a numeric argument\n'
+    	    fi
+	    ;;
+	--title)
+            if [ "$2" ]; then
+                TITLEFILE=$2
+                shift 2
+                if [ ! -e "$TITLEFILE" ]
+                    then echo -e "\nERROR: $TITLEFILE doesn't exist! Please check \n"
+                    exit 1
+                fi
+                if [ ! -s "$TITLEFILE" ]
+                    then echo -e "\nERROR: Size of $TITLEFILE is 0! Please check \n"
+                    exit 1
+                fi
+            else
+                echo -e '\nERROR: "--title" requires an argument'
+		echo -e 'Avoid using "--title" if you would like a title by default\n'
+                exit 1
+            fi
+	    ;;
+	-v|--version)
+	    echo "QiimeReporter version $VERSION"
+	    exit 1
+	    ;;
+	-?*)
+	    echo -e "\nERROR: unknown option: $1 \n"
+	    usage
+	    exit 1
+	    ;;
+	*)
+	    echo -e "\nERROR: unknown option: $1 \n"
+            usage
+            exit 1
+            ;;
+esac
+done
+set -- "${POSITIONAL[@]}" #restore positional parameters
+
+# REPORT ONLY CONDITIONAL
+if [ "$DOREP" == '1' ]; then
+
+# CHECK OBLIGATORY VARIABLES
+if [ -z "$INPUT" ] || [ -z "$OUTPUT" ] || [ -z "$METADATA" ]; then
+	echo ""
+	if [ -z "$INPUT" ]; then
+           echo 'ERROR: "-i/--input" option is needed!'
+        fi
+	if [ -z "$METADATA" ]; then
+           echo 'ERROR: "-m/--metadata" option is needed!'
+        fi
+	if [ -z "$OUTPUT" ]; then
+	   echo 'ERROR: "-o/--output" option is needed!'
+	fi
+	echo ""
+	exit 1
+fi
+
+# CHECK METADATA FORMAT
+
+## Number of colums
+head -n 1 $METADATA > temp1
+read NCOL <<< $(awk -F "$TAB" '{print NF}' temp1 | sort -nu | tail -n 1)
+if [ $NCOL -lt "4" ]; then
+	echo -e "\nERROR: $METADATA format is incorrect (number of columns < 4), please check"
+	echo -e "Type: '$0 example-metadata' for extra information\n"
+	rm -f temp1
+	exit 1
+fi
+
+rm -f temp1
+
+read HEADER <<< $(head -n 1 $METADATA | cut -d "$TAB" -f 1)
+if [ $HEADER != "#SampleID" ]; then
+	echo -e "\nERROR: $METADATA format is incorrect (First column name should be '#SampleID'), please check"
+        echo -e "Type: '$0 example-metadata' for extra information\n"
+        exit 1
+fi
+
+read HEADER <<< $(head -n 1 $METADATA | cut -d "$TAB" -f 2)
+if [ $HEADER != "BarcodeSequence" ]; then
+        echo -e "\nERROR: $METADATA format is incorrect (Second column name should be 'BarcodeSequence'), please check"
+        echo -e "Type: '$0 example-metadata' for extra information\n"
+        exit 1
+fi
+
+read HEADER <<< $(head -n 1 $METADATA | cut -d "$TAB" -f 3)
+if [ $HEADER != "LinkerPrimerSequence" ]; then
+        echo -e "\nERROR: $METADATA format is incorrect (Third column name should be 'LinkerPrimerSequence'), please check"
+        echo -e "Type: '$0 example-metadata' for extra information\n"
+        exit 1
+fi
+
+## Check if categorical and numerical columns are correct 
+
+## Check if sample names are unique
+
+duplicate_check() {
+	{ sort | uniq -d | grep . -qc; } < "$1"
+}
+
+tail -n +2 $METADATA > temp1
+cut -f 1 -d "$TAB" temp1 > temp2
+if duplicate_check temp2; then
+	echo -e "\nERROR: there are some sample names that are equal! Please check\n"
+	rm -f temp2
+	exit 1
+fi
+
+rm -f temp1
+rm -f temp2
+
+# CHECK DEPENDENCIES?? 
+
+# QIIME
+
+## Activating Qiime 2 environment in Conda (eliminar cuando sea un paquete completo de CONDA)
+source /home/biotec/software/source/miniconda2/etc/profile.d/conda.sh
+conda activate /home/biotec/software/source/miniconda2/envs/qiime2-2018.11
+
+## Create output folder 
+mkdir -p $OUTPUT
+if [ ! -d $OUTPUT ]; then
+	echo -e "\nERROR: $OUTPUT could not be created in the selected directory\n"
+	exit 1
+fi
+
+OUTEMP="$( cd -P "$( dirname "$OUTPUT" )" && pwd )"
+OUTWD="$OUTEMP/$OUTPUT"
+
+cd $OUTWD
+
+cat << EOF
+
+Thanks for using QiimeReporter version $VERSION
+Status can be shown in "$OUTWD/qiimereporter.log
+
+EOF
+
+cat << EOF >> $OUTWD/qiimereporter.log
+
+This is QiimeReporter version $VERSION
+
+Parameters set:
+	- Metadata file: $METADATA
+	- Output directory: $OUTPUT
+	- Number of threads to use: $CPUS
+EOF
+
+echo -e "QiimeReporter pipeline started at: \c" >> $OUTWD/qiimereporter.log
+date +"%Y-%m-%d %H:%M" >> $OUTWD/qiimereporter.log
+echo ""
+
+## Importing Illumina sequences from Raw_reads folder
+qiime tools import --type 'SampleData[PairedEndSequencesWithQuality]' --input-path ../$INPUT --output-path PE-reads.qza --input-format CasavaOneEightSingleLanePerSampleDirFmt >> $OUTWD/qiimereporter.log
+qiime tools peek PE-reads.qza >> $OUTWD/qiimereporter.log
+qiime demux summarize --i-data PE-reads.qza --o-visualization PE-reads.qzv >> $OUTWD/qiimereporter.log
+
+## Quality trimming and ASV generation
+echo -e "DADA2 started at: \c" >> $OUTWD/qiimereporter.log
+date +"%Y-%m-%d %H:%M" >> $OUTWD/qiimereporter.log
+qiime dada2 denoise-paired --i-demultiplexed-seqs PE-reads.qza --p-trim-left-f 13 --p-trim-left-r 13 --p-trunc-len-f $TRUNF --p-trunc-len-r $TRUNR --o-representative-sequences rep-seqs.qza --o-table table.qza --o-denoising-stats stats-dada2.qza --p-n-threads $CPUS >> $OUTWD/qiimereporter.log
+qiime metadata tabulate --m-input-file stats-dada2.qza --o-visualization stats-dada2.qzv >> $OUTWD/qiimereporter.log
+qiime tools export --input-path stats-dada2.qza --output-path exported-feature-table >> $OUTWD/qiimereporter.log
+qiime feature-table summarize --i-table table.qza --o-visualization table.qzv --m-sample-metadata-file ../$METADATA >> $OUTWD/qiimereporter.log
+qiime feature-table tabulate-seqs --i-data rep-seqs.qza --o-visualization rep-seqs.qzv >> $OUTWD/qiimereporter.log
+
+## Taxonomy assignment
+echo -e "Taxonomy assignment started at: \c" >> $OUTWD/qiimereporter.log
+date +"%Y-%m-%d %H:%M" >> $OUTWD/qiimereporter.log
+qiime feature-classifier classify-sklearn --i-classifier $DATABASE --i-reads rep-seqs.qza --o-classification taxonomy.qza --p-n-jobs $CPUS >> $OUTWD/qiimereporter.log
+qiime tools export --input-path table.qza --output-path exported-feature-table >> $OUTWD/qiimereporter.log
+qiime tools export --input-path taxonomy.qza --output-path exported-feature-table >> $OUTWD/qiimereporter.log
+sed  's/Feature ID\tTaxon\tConfidence/#OTUID\ttaxonomy\tconfidence/g' exported-feature-table/taxonomy.tsv > exported-feature-table/biom-taxonomy.tsv
+biom add-metadata -i exported-feature-table/feature-table.biom -o table-with-taxonomy.biom --observation-metadata-fp exported-feature-table/biom-taxonomy.tsv --sc-separated taxonomy 
+	
+## Tree generation
+echo -e "Tree generation started at: \c" >> $OUTWD/qiimereporter.log
+date +"%Y-%m-%d %H:%M" >> $OUTWD/qiimereporter.log
+qiime alignment mafft --i-sequences rep-seqs.qza --o-alignment aligned-rep-seqs.qza --p-n-threads $CPUS >> $OUTWD/qiimereporter.log
+qiime alignment mask --i-alignment aligned-rep-seqs.qza --o-masked-alignment masked-aligned-rep-seqs.qza >> $OUTWD/qiimereporter.log
+qiime phylogeny fasttree --i-alignment masked-aligned-rep-seqs.qza --o-tree unrooted-tree.qza --p-n-threads 32 >> $OUTWD/qiimereporter.log
+qiime phylogeny midpoint-root --i-tree unrooted-tree.qza --o-rooted-tree rooted-tree.qza >> $OUTWD/qiimereporter.log
+qiime tools export --input-path rooted-tree.qza --output-path exported-feature-table >> $OUTWD/qiimereporter.log
+
+## Formatting files for report
+
+# Creating sample information file with read stats
+awk '{print $2,$6}' exported-feature-table/stats.tsv > stats-temp.tsv
+paste ../sample-metadata.tsv stats-temp.tsv > sample-info.tsv
+sed -i '2d;s/^#//' sample-info.tsv
+sed -i 's/ /\t/' sample-info.tsv
+rm stats-temp.tsv
+
+### OTU tables
+#### Extract all levels from qiime2 results
+for i in 2 3 4 5 6 7; do
+	qiime taxa collapse --i-table table.qza --i-taxonomy taxonomy.qza --p-level $i --o-collapsed-table tablelevel-$i.qza >> $OUTWD/qiimereporter.log
+	qiime tools export --input-path tablelevel-$i.qza --output-path exported-feature-table-$i >> $OUTWD/qiimereporter.log
+	biom convert -i exported-feature-table-$i/feature-table.biom -o otu_table_level-$i.txt --to-tsv
+	rm -r exported-feature-table-$i
+	rm tablelevel-$i.qza
+done
+
+#### Removes everything but final taxonomic level
+for i in $(ls otu_table_level*); do
+	sed -i '1d;s/^#//' $i
+	sed -i 's/ /_/g' $i 
+	awk '{print $1}' $i > temp-$i
+	sed -i 's/\;D_[0-7]__uncultured.*//g' temp-$i
+	sed -i 's/\;D_[0-7]__metagenome//g' temp-$i
+	sed -i 's@.*[0-7]__@@' temp-$i 
+	sed -i 's/\;__//g' temp-$i
+	paste temp-$i $i | sed -r 's/\S+//2' > final-$i
+	rm temp-$i
+done
+
+## Create report_files folder
+mkdir $OUTWD/report_files
+cd $OUTWD/report_files
+mv ../table-with-taxonomy.biom table-with-taxonomy_nc.biom 
+mv ../exported-feature-table/tree.nwk .
+mv ../final-otu_table_* .
+mv ../sample-info.tsv .
+mv ../../$TITLEFILE .
+
+## Converting biom file to json for phyloseq
+
+biom convert -i table-with-taxonomy_nc.biom -o table-with-taxonomy.biom --table-type="OTU table" --to-json
+rm table-with-taxonomy_nc.biom
+
+##Exit Qiime2
+conda deactivate
+fi
+
+#Enter R
+source /home/biotec/software/source/miniconda2/etc/profile.d/conda.sh
+conda activate R
+
+#Creating the RMD file
+
+# REPORT ONLY CONDITIONAL
+if [ "$DOREP" == '1' ]; then
+echo -e "Report started at: \c" >> $OUTWD/qiimereporter.log
+date +"%Y-%m-%d %H:%M" >> $OUTWD/qiimereporter.log
+fi
+
+if [ ! -z "$TITLEFILE" ]; then
+	TITLE="$(<$TITLEFILE)"
+else
+	TITLE="Analysis Performed on $DATE"
+fi
+
+cat << EOF > report.Rmd
+---
+title: "$TITLE"
+date: "$DATE"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+\`\`\`{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(dplyr)
+library(textshape)
+library(plotly)
+library(MicrobeR)
+library("phyloseq")
+library("scales")
+library("RJSONIO")
+library("ape")
+library("qiimer")
+library("vegan")
+library("ranacapa")
+knitr::opts_chunk\$set(root.dir = getwd(), out.width="1200px", dpi=150, fig.align = "center")
+\`\`\`
+
+<br>
+
+## Sample information
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+table <- read.table(file = "sample-info.tsv",row.names=1, header = T, sep="\t")
+table\$BarcodeSequence <- NULL
+table\$LinkerPrimerSequence <- NULL
+Nice.Table(table)
+\`\`\` 
+
+<br>
+
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
+# Importing data
+table_otu = import_biom("table-with-taxonomy.biom")
+metadata = import_qiime_sample_data("sample-info.tsv")
+tree = read.tree("tree.nwk")
+DOM = merge_phyloseq(table_otu, metadata, tree)
+
+# Change column names with taxonomy
+colnames(tax_table(DOM))[1] = "Domain" 
+colnames(tax_table(DOM))[2] = "Phylum" 
+colnames(tax_table(DOM))[3] = "Class" 
+colnames(tax_table(DOM))[4] = "Order" 
+colnames(tax_table(DOM))[5] = "Family" 
+colnames(tax_table(DOM))[6] = "Genus" 
+colnames(tax_table(DOM))[7] = "Species" 
+\`\`\`
+
+<br>
+
+EOF
+
+if [ "$DORAR" == '1' ]; then
+cat << EOF >> report.Rmd
+## Rarefaction curves
+### Figure 1. Rarefaction curves for each sample.
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
+table_otu_even = rarefy_even_depth(table_otu, sample.size = 10000, trimOTUs = TRUE)
+DOM_even = merge_phyloseq(table_otu_even, metadata, tree)
+p0 = ggrare(DOM_even, step = 1000, color = "SampleID", parallel = TRUE, plot = FALSE)
+p0 = p0 + theme_bw()
+print(p0)
+\`\`\`
+
+<br>
+
+EOF
+fi
+
+cat << EOF >> report.Rmd
+## Most abundant taxa
+#### Select the taxonomic level {.tabset .tabset-fade .tabset-pills}
+##### Species
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-7.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+# Transpose again
+rel_otutablet=t(rel_otutable)
+
+#Ordering the otu table
+TOTAL=as.vector(rowSums(rel_otutablet))
+TEMP=cbind(rel_otutablet, TOTAL)
+TEMP=as.data.frame(TEMP)
+TEMP2=TEMP[order(-TEMP\$TOTAL),]
+TOTAL=which(colnames(TEMP2)=="TOTAL")
+ordered_otutable=TEMP2[,-TOTAL]
+
+# Selecting 10 most abundant OTUs
+abundant=head(ordered_otutable, 10)
+
+# Reduce to two decimals
+abundant_format = format(round(abundant, 2), nsmall = 2)
+
+# Last transpose
+abundantt=t(abundant_format)
+
+# Print table
+Nice.Table(abundantt)
+\`\`\` 
+
+##### Genus
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-6.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+# Transpose again
+rel_otutablet=t(rel_otutable)
+
+#Ordering the otu table
+TOTAL=as.vector(rowSums(rel_otutablet))
+TEMP=cbind(rel_otutablet, TOTAL)
+TEMP=as.data.frame(TEMP)
+TEMP2=TEMP[order(-TEMP\$TOTAL),]
+TOTAL=which(colnames(TEMP2)=="TOTAL")
+ordered_otutable=TEMP2[,-TOTAL]
+
+# Selecting 10 most abundant OTUs
+abundant=head(ordered_otutable, 10)
+
+# Reduce to two decimals
+abundant_format = format(round(abundant, 2), nsmall = 2)
+
+# Last transpose
+abundantt=t(abundant_format)
+
+# Print table
+Nice.Table(abundantt)
+\`\`\` 
+
+##### Family
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-5.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+# Transpose again
+rel_otutablet=t(rel_otutable)
+
+#Ordering the otu table
+TOTAL=as.vector(rowSums(rel_otutablet))
+TEMP=cbind(rel_otutablet, TOTAL)
+TEMP=as.data.frame(TEMP)
+TEMP2=TEMP[order(-TEMP\$TOTAL),]
+TOTAL=which(colnames(TEMP2)=="TOTAL")
+ordered_otutable=TEMP2[,-TOTAL]
+
+# Selecting 10 most abundant OTUs
+abundant=head(ordered_otutable, 10)
+
+# Reduce to two decimals
+abundant_format = format(round(abundant, 2), nsmall = 2)
+
+# Last transpose
+abundantt=t(abundant_format)
+
+# Print table
+Nice.Table(abundantt)
+\`\`\` 
+
+##### Order
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-4.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+# Transpose again
+rel_otutablet=t(rel_otutable)
+
+#Ordering the otu table
+TOTAL=as.vector(rowSums(rel_otutablet))
+TEMP=cbind(rel_otutablet, TOTAL)
+TEMP=as.data.frame(TEMP)
+TEMP2=TEMP[order(-TEMP\$TOTAL),]
+TOTAL=which(colnames(TEMP2)=="TOTAL")
+ordered_otutable=TEMP2[,-TOTAL]
+
+# Selecting 10 most abundant OTUs
+abundant=head(ordered_otutable, 10)
+
+# Reduce to two decimals
+abundant_format = format(round(abundant, 2), nsmall = 2)
+
+# Last transpose
+abundantt=t(abundant_format)
+
+# Print table
+Nice.Table(abundantt)
+\`\`\` 
+
+##### Class
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-3.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+# Transpose again
+rel_otutablet=t(rel_otutable)
+
+#Ordering the otu table
+TOTAL=as.vector(rowSums(rel_otutablet))
+TEMP=cbind(rel_otutablet, TOTAL)
+TEMP=as.data.frame(TEMP)
+TEMP2=TEMP[order(-TEMP\$TOTAL),]
+TOTAL=which(colnames(TEMP2)=="TOTAL")
+ordered_otutable=TEMP2[,-TOTAL]
+
+# Selecting 10 most abundant OTUs
+abundant=head(ordered_otutable, 10)
+
+# Reduce to two decimals
+abundant_format = format(round(abundant, 2), nsmall = 2)
+
+# Last transpose
+abundantt=t(abundant_format)
+
+# Print table
+Nice.Table(abundantt)
+\`\`\` 
+
+##### Phylum
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-2.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+# Transpose again
+rel_otutablet=t(rel_otutable)
+
+#Ordering the otu table
+TOTAL=as.vector(rowSums(rel_otutablet))
+TEMP=cbind(rel_otutablet, TOTAL)
+TEMP=as.data.frame(TEMP)
+TEMP2=TEMP[order(-TEMP\$TOTAL),]
+TOTAL=which(colnames(TEMP2)=="TOTAL")
+ordered_otutable=TEMP2[,-TOTAL]
+
+# Selecting 10 most abundant OTUs
+abundant=head(ordered_otutable, 10)
+
+# Reduce to two decimals
+abundant_format = format(round(abundant, 2), nsmall = 2)
+
+# Last transpose
+abundantt=t(abundant_format)
+
+# Print table
+Nice.Table(abundantt)
+\`\`\` 
+
+<br>
+
+## Taxonomic groups
+#### Select the taxonomic level {.tabset .tabset-fade .tabset-pills}
+##### Phylum
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-2.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+#Get grouping information
+grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
+
+#Apply proportion normalisation
+x<-rel_otutable
+x<-x[,order(colSums(x),decreasing=TRUE)]
+
+#Extract list of Taxa
+taxa_list<-colnames(x)
+N<-length(taxa_list)
+
+#Create the plot
+df<-NULL
+for (i in 1:dim(x)[2]){
+  tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],TAXA=rep(colnames
+                                                                   (x)[i],dim(x)[1]),Value=x[,i])
+  if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
+}
+colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
+             "#FFA405","#66CCFF","#426600","orchid","thistle","#9DCC00",
+             "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
+             "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
+	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
+
+# , steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
+
+library(ggplot2)
+p<-ggplot(df,aes(SAMPLE,Value,fill=TAXA))+geom_bar(stat="identity")
+p<-p+scale_fill_manual(values=colours[1:(N+1)], "")
+p<-p+theme_bw()+ylab("ABUNDANCE")
+p<-p+ scale_y_continuous(expand = c(0,0))+theme(strip.background = element_rect(fill="gray85"))+theme(panel.margin = unit(0.4, "lines"))
+p<-p+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+p<-p+ theme(legend.position = "bottom") 
+p<-p+ theme(axis.title.x = element_blank())
+ggplotly(p)
+\`\`\` 
+
+<br>
+
+EOF
+
+if [ "$DOPCOA" == '1' ] && [ "$COLOR" ]; then
+cat << EOF >> report.Rmd
+## Multivariate analysis
+#### Select the visualization {.tabset .tabset-fade .tabset-pills}
+##### PCoA
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-7.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Plot PCoA
+PCoA(METRIC="braycurtis", FEATURES =  otutable_rn, METADATA = table, COLOR = "$COLOR") + ggtitle("Exploratory PCoA of Bray Curtis Dissimilarities")
+\`\`\` 
+
+
+##### 3D PCoA
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-7.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Plot 3D PCoA
+PCoA3D(METRIC="braycurtis", FEATURES = otutable_rn, METADATA = table, COLOR = "$COLOR")
+\`\`\` 
+
+<br>
+
+EOF
+fi
+
+if [ "$DOPCOA" == '1' ] && [ "$COLOR" == '' ]; then
+cat << EOF >> report.Rmd
+## Multivariate analysis
+#### Select the visualization {.tabset .tabset-fade .tabset-pills}
+##### PCoA
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-7.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Plot PCoA
+PCoA(METRIC="braycurtis", FEATURES =  otutable_rn, METADATA = table) + ggtitle("Exploratory PCoA of Bray Curtis Dissimilarities")
+\`\`\` 
+
+
+##### 3D PCoA
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-7.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Plot 3D PCoA
+PCoA3D(METRIC="braycurtis", FEATURES = otutable_rn, METADATA = table)
+\`\`\` 
+
+<br>
+
+EOF
+fi
+
+if [ "$MULTI" == '1' ] && [ "$COLOR" ]; then
+cat << EOF >> report.Rmd
+## Other multivariate analysis
+#### Select the plot {.tabset .tabset-fade .tabset-pills}
+
+##### NMDS
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+## NMDS PLOT##
+p1 = plot_ordination(DOM, ordinate(DOM, "NMDS", "bray"), color = "$COLOR")     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
+ggplotly(p1, tooltip = c( "tipo", "x", "y"))
+\`\`\`
+
+##### DCA
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+## NMDS PLOT##
+p1 = plot_ordination(DOM, ordinate(DOM, "DCA", "bray"), color = "$COLOR")     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
+ggplotly(p1, tooltip = c( "tipo", "x", "y"))
+\`\`\`
+
+##### CCA
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+## NMDS PLOT##
+p1 = plot_ordination(DOM, ordinate(DOM, "CCA", "bray"), color = "$COLOR")     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
+ggplotly(p1, tooltip = c( "tipo", "x", "y"))
+\`\`\`
+
+##### RDA
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+## NMDS PLOT##
+p1 = plot_ordination(DOM, ordinate(DOM, "RDA", "bray"), color = "$COLOR")     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
+ggplotly(p1, tooltip = c( "tipo", "x", "y"))
+\`\`\`
+
+<br>
+
+## Analysis of Similarities (ANOSIM)
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+tipo = get_variable(DOM, "$COLOR")
+tipo_ano = anosim(distance(DOM, "bray"), tipo, permutations = 999)
+anosim <- matrix(c(tipo_ano\$signif, tipo_ano\$statistic),ncol=2,byrow=TRUE)
+colnames(anosim) <- c("Significance","Statistic")
+rownames(anosim) <- c("Anosim")
+anosim <- as.table(anosim)
+kable(anosim)%>%
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+\`\`\`
+
+<br>
+
+EOF
+fi
+
+if [ "$MULTI" == '1' ] && [ "$COLOR" == '' ]; then
+cat << EOF >> report.Rmd
+## Other multivariate analysis
+#### Select the plot {.tabset .tabset-fade .tabset-pills}
+
+##### NMDS
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+## NMDS PLOT##
+p1 = plot_ordination(DOM, ordinate(DOM, "NMDS", "bray"))     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
+ggplotly(p1, tooltip = c( "tipo", "x", "y"))
+\`\`\`
+
+##### DCA
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+## NMDS PLOT##
+p1 = plot_ordination(DOM, ordinate(DOM, "DCA", "bray"))     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
+ggplotly(p1, tooltip = c( "tipo", "x", "y"))
+\`\`\`
+
+##### CCA
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+## NMDS PLOT##
+p1 = plot_ordination(DOM, ordinate(DOM, "CCA", "bray"))     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
+ggplotly(p1, tooltip = c( "tipo", "x", "y"))
+\`\`\`
+
+##### RDA
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+## NMDS PLOT##
+p1 = plot_ordination(DOM, ordinate(DOM, "RDA", "bray"))     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
+ggplotly(p1, tooltip = c( "tipo", "x", "y"))
+\`\`\`
+
+<br>
+
+EOF
+fi
+
+if [ "$DODIV" == '1' ] && [ "$COLOR" ]; then
+cat << EOF >> report.Rmd
+## Diversity indexes
+#### Select index {.tabset .tabset-fade .tabset-pills}
+##### Chao1
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+p = plot_richness(DOM, color = "$COLOR", measures=c("Chao1"))
+p = p + geom_point(size=4) + theme(legend.position="none")
+ggplotly(p, tooltip = c( "samples", "value"))
+#plot_bar(DOM, fill = "Family")
+\`\`\`
+
+##### Simpson
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+p = plot_richness(DOM, color = "$COLOR", measures=c("Simpson"))
+p = p + geom_point(size=4) + theme(legend.position="none")
+ggplotly(p, tooltip = c( "samples", "value"))
+#plot_bar(DOM, fill = "Family")
+\`\`\`
+
+##### Shannon
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+p = plot_richness(DOM, color = "$COLOR", measures=c("Shannon"))
+p = p + geom_point(size=4) + theme(legend.position="none")
+ggplotly(p, tooltip = c( "samples", "value"))
+#plot_bar(DOM, fill = "Family")
+\`\`\`
+
+<br>
+
+EOF
+fi
+
+if [ "$DODIV" == '1' ] && [ "$COLOR" == '' ]; then
+cat << EOF >> report.Rmd
+## Diversity indexes
+#### Select index {.tabset .tabset-fade .tabset-pills}
+##### Chao1
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+p = plot_richness(DOM, measures=c("Chao1"))
+p = p + geom_point(size=4) + theme(legend.position="none")
+ggplotly(p, tooltip = c( "samples", "value"))
+#plot_bar(DOM, fill = "Family")
+\`\`\`
+
+##### Simpson
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+p = plot_richness(DOM, measures=c("Simpson"))
+p = p + geom_point(size=4) + theme(legend.position="none")
+ggplotly(p, tooltip = c( "samples", "value"))
+#plot_bar(DOM, fill = "Family")
+\`\`\`
+
+##### Shannon
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+p = plot_richness(DOM, measures=c("Shannon"))
+p = p + geom_point(size=4) + theme(legend.position="none")
+ggplotly(p, tooltip = c( "samples", "value"))
+#plot_bar(DOM, fill = "Family")
+\`\`\`
+
+<br>
+
+EOF
+fi
+
+if [ "$DOHEAT" == '1' ]; then
+cat << EOF >> report.Rmd
+## Heatmap
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
+# Plot a heatmap
+p = plot_heatmap(DOM, method = "NMDS", distance = "bray", sample.label = NULL, taxa.label = NULL)
+p
+\`\`\`
+
+<br>
+
+EOF
+fi
+
+if [ "$DONET" == '1' ] && [ "$COLOR" ]; then
+cat << EOF >> report.Rmd
+## Network
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
+ig = make_network(DOM, type = "samples", distance = "bray", max.dist = 0.7)
+plot_network(ig, DOM, color = "$COLOR", line_weight = 0.4, label = "SampleID") + theme(legend.position="none")
+\`\`\`
+
+EOF
+fi
+
+if [ "$DONET" == '1' ] && [ "$COLOR" == '' ]; then
+cat << EOF >> report.Rmd
+## Network
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
+ig = make_network(DOM, type = "samples", distance = "bray", max.dist = 0.7)
+plot_network(ig, DOM, line_weight = 0.4, label = "SampleID") + theme(legend.position="none")
+\`\`\`
+
+EOF
+fi
+
+# Executing de Rmd
+if [ "$DOREP" == '1' ]; then
+	echo -e "Rscript -e 'library(rmarkdown); rmarkdown::render(\"$OUTWD/report_files/report.Rmd\", \"html_document\", encoding=\"UTF-8\")'" > report.sh
+else 
+	echo -e "Rscript -e 'library(rmarkdown); rmarkdown::render(\"report.Rmd\", \"html_document\", encoding=\"UTF-8\")'" > report.sh
+fi
+
+chmod 755 report.sh 
+./report.sh &>report.log
+rm report.sh
+
+if [ -s report.html ]; then
+	mv report.html ../report.html
+else
+	echo
+	echo -e "WARNING: html report file could not be created"
+fi	
+
+end=`date +%s`
+
+# Final details
+#rm report.Rmd
+
+if [ "$DOREP" == '1' ]; then
+cd ..
+mkdir $OUTWD/qiime2_artifacts
+mv *.qza $OUTWD/qiime2_artifacts/
+mv *.qzv $OUTWD/qiime2_artifacts/
+rm -r $OUTWD/exported-feature-table
+mkdir $OUTWD/complete_taxonomy_otutables
+mv otu_table_* $OUTWD/complete_taxonomy_otutables/
+fi
+
+# Calculate the difference
+let time=${end}-${start}
+
+elapsed=`hms $time`
+echo
+echo "QiimeReporter took ${elapsed} to run"
+
+if [ "$DOREP" == '1' ]; then
+echo "QiimeReporter took ${elapsed} to run" >> $OUTWD/qiimereporter.log
+fi 
+
+echo
+echo "THANK YOU FOR USING QIIMEREPORTER! NOW YOU CAN CHECK YOUR REPORT :)"
+echo 
