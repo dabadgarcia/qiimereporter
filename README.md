@@ -143,4 +143,4 @@ The dependencies described in [this section](#required-dependencies) are the bac
 <br>
 
 ## License
-QiimeReporter is a free software licensed under [GPLv3](https://github.com/dabadgarcia/qiimereporter/blob/master/LICENSE).
+QiimeReporter is a open-source software licensed under [GPLv3](https://github.com/dabadgarcia/qiimereporter/blob/master/LICENSE).
