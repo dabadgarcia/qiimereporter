@@ -1,0 +1,35 @@
+#! /bin/bash
+
+#This script is used to install the dependencies not available in Conda. 	
+	
+QIIMEREPORTER=$0
+while [ -h "$QIIMEREPORTER" ]; do # resolve $QIIMEREPORTER until the file is no longer a symlink
+  QIIMEREPORTERDIR="$( cd -P "$( dirname "$0" )" && pwd )"
+  QIIMEREPORTER="$(readlink "$QIIMEREPORTER")"
+  [[ $QIIMEREPORTER != /* ]] && QIIMEREPORTER="$QIIMEREPORTERDIR/$QIIMEREPORTER" # if $QIIMEREPORTER is a symlink, resolve it relative to the path where the symlink file was located
+done
+QIIMEREPORTERDIR="$( cd -P "$( dirname "$QIIMEREPORTER" )" && pwd )"
+
+echo -e "\nInstalling Qiime2\n"
+wget https://data.qiime2.org/distro/core/qiime2-2018.11-py35-linux-conda.yml
+conda env create -n qiime2-2018.11 --file qiime2-2018.11-py35-linux-conda.yml
+rm qiime2-2018.11-py35-linux-conda.yml
+
+echo -e "\nDownloading SILVA 132 database\n"
+mkdir -p $QIIMEREPORTER/../db/silva
+wget https://data.qiime2.org/2018.11/common/silva-132-99-nb-classifier.qza -P $QIIMEREPORTER/../db/silva/
+
+echo -e "\nInstalling missing R packages\n"
+Rscript -e 'install.packages("kableExtra")'
+Rscript -e 'install.packages("vegan")'
+Rscript -e 'install.packages("qiimer")'
+Rscript -e 'install.packages("textshape")'
+Rscript -e "source('http://bioconductor.org/biocLite.R');biocLite('phyloseq')"
+Rscript -e "source('http://bioconductor.org/biocLite.R');biocLite("DECIPHER")"
+Rscript -e 'install.packages("devtools")'
+Rscript -e 'library(devtools); devtools::install_github('talgalili/installr')'
+Rscript -e 'library(devtools); devtools::install_github("gauravsk/ranacapa")'
+Rscript -e 'library(devtools); devtools::install_github('jsilve24/philr')'
+Rscript -e 'library(devtools); devtools::install_github("jbisanz/MicrobeR")'
+
+echo -e "\nQIIMEREPORTER is installed and ready to use. Enjoy!\n"
