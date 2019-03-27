@@ -55,7 +55,7 @@ This step will install additional dependencies not available in conda and the [S
 QiimeReporter is a pipeline that requires a few dependencies to work:  
   * [Qiime2](https://github.com/qiime2/qiime2)
   * [R](https://cran.r-project.org/)
-    * R packages: [ggtree](https://bioconductor.org/packages/release/bioc/html/ggtree.html), [knitr](https://cran.r-project.org/web/packages/knitr/index.html), [plotly](https://cran.r-project.org/web/packages/plotly/index.html), [rmarkdown](https://cran.r-project.org/web/packages/rmarkdown/index.html), [Phyloseq] (https://github.com/joey711/phyloseq)
+    * R packages: [ggtree](https://bioconductor.org/packages/release/bioc/html/ggtree.html), [knitr](https://cran.r-project.org/web/packages/knitr/index.html), [plotly](https://cran.r-project.org/web/packages/plotly/index.html), [rmarkdown](https://cran.r-project.org/web/packages/rmarkdown/index.html), [phyloseq](https://github.com/joey711/phyloseq)
   * [SILVA](https://www.arb-silva.de/)
    
 <br>
