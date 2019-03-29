@@ -1,6 +1,6 @@
 #! /bin/bash
 
-#This script is made to run the most common Qiime 2 commands and to generate a report automatically. 	
+#This is QiimeReporter, a one step pipeline for amplicon sequence analysis. 	
 	
 start=`date +%s`
 
@@ -36,7 +36,7 @@ QIIMEREPORTERDIR="$( cd -P "$( dirname "$QIIMEREPORTER" )" && pwd )"
 # VARIABLES
 COLOR=
 CPUS=1
-DATABASE=$QIIMEREPORTER/../db/silva/silva-132-99-nb-classifier-V3-V4.qza
+DATABASE=$QIIMEREPORTERDIR/../db/silva/
 DATE="$( date +"%Y-%m-%d" )"
 DODIV=1
 DOHEAT=1
@@ -395,10 +395,6 @@ rm -f temp2
 
 # QIIME
 
-## Activating Qiime 2 environment in Conda (eliminar cuando sea un paquete completo de CONDA)
-source /home/biotec/software/source/miniconda2/etc/profile.d/conda.sh
-conda activate /home/biotec/software/source/miniconda2/envs/qiime2-2018.11
-
 ## Create output folder 
 mkdir -p $OUTPUT
 if [ ! -d $OUTPUT ]; then
@@ -510,13 +506,7 @@ mv ../../$TITLEFILE .
 biom convert -i table-with-taxonomy_nc.biom -o table-with-taxonomy.biom --table-type="OTU table" --to-json
 rm table-with-taxonomy_nc.biom
 
-##Exit Qiime2
-conda deactivate
 fi
-
-#Enter R
-source /home/biotec/software/source/miniconda2/etc/profile.d/conda.sh
-conda activate R
 
 #Creating the RMD file
 
