@@ -29,8 +29,8 @@ QiimeReporter is a straightforward pipeline for the analysis of amplicon sequenc
 The philosophy of QiimeReporter is to be user-friendly so it has been prepared as a conda environment. Run the following commands to  install QiimeReporter an its dependencies:  
 
 ```
-wget https://anaconda.org/
-conda env create -n qiimereporter --file qiimereporter.yml
+conda create -n qiimereporter
+conda install -c dabadgarcia qiimereporter
 ```
 <br>
 
@@ -47,7 +47,7 @@ Additionally, the first time you are using QiimeReporter, run (after activating 
 qiimereporter-setup
 ```
 
-This step will install additional dependencies not available in conda and the [SILVA](https://www.arb-silva.de/) database (reselase 132).
+This step will install Qiime 2, additional dependencies not available in conda and the [SILVA](https://www.arb-silva.de/) database (reselase 132).
 
 <br>
 
