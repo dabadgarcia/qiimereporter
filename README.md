@@ -3,13 +3,9 @@
 
 <br>
 
-# QiimeReporter 
-One step pipeline for amplicon sequence analysis.  
-
-## Contents  
-  * [What is QiimeReporter?](#what-is-qiimereporter)
+## Index  
+  * [About](#about)
   * [Installation](#installation)
-      * [Required dependencies](#required-dependencies)
   * [Usage](#usage)
       * [Metadata](#metadata)  
   * [Output](#output)
@@ -18,46 +14,26 @@ One step pipeline for amplicon sequence analysis.
 
 <br>
 
-## What is QiimeReporter?
+## About
 
-QiimeReporter is a straightforward pipeline for the analysis of amplicon sequences directly from raw Illumina paired-end data. It integrates the most common [Qiime2](https://github.com/qiime2/qiime2) commands with [R](https://cran.r-project.org/) in order to create a final html report that can be opened in any web browser and easily shareable between researchers.  
+QiimeReporter is a straightforward pipeline for the analysis of amplicon sequences directly from raw Illumina paired-end data. It integrates the main [Qiime2](https://github.com/qiime2/qiime2) commands with [R](https://cran.r-project.org/) in order to generate a final html report that can be opened in any web browser and easily shared between researchers.  
 
 <br>
 
 ## Installation
 
-The philosophy of QiimeReporter is to be user-friendly so it has been prepared as a conda environment. Run the following commands to  install QiimeReporter an its dependencies:  
+The philosophy behind QiimeReporter is to be user-friendly, so it has been prepared as a [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) environment. Run the following commands to install it:  
 
 ```
 conda create -n qiimereporter
-conda install -c dabadgarcia qiimereporter
-```
-<br>
-
-To activate QiimeReporter environment run:  
-
-```
 conda activate qiimereporter
-```
-<br>
-
-Additionally, the first time you are using QiimeReporter, run (after activating QiimeReporter environment):
-
-```
+conda install -c dabadgarcia qiimereporter
 qiimereporter-setup
 ```
-
-This step will install Qiime 2, additional dependencies not available in conda and the [SILVA](https://www.arb-silva.de/) database (reselase 132).
-
 <br>
 
-### Required dependencies
-QiimeReporter is a pipeline that requires a few dependencies to work:  
-  * [Qiime2](https://github.com/qiime2/qiime2)
-  * [R](https://cran.r-project.org/)
-    * R packages: [ggtree](https://bioconductor.org/packages/release/bioc/html/ggtree.html), [knitr](https://cran.r-project.org/web/packages/knitr/index.html), [plotly](https://cran.r-project.org/web/packages/plotly/index.html), [rmarkdown](https://cran.r-project.org/web/packages/rmarkdown/index.html), [phyloseq](https://github.com/joey711/phyloseq)
-  * [SILVA](https://www.arb-silva.de/)
-   
+This last step will install [Qiime2](https://github.com/qiime2/qiime2), additional [R](https://cran.r-project.org/) dependencies not available in [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) and the [SILVA](https://www.arb-silva.de/) database (reselase 132).
+
 <br>
 
 ## Usage
@@ -89,7 +65,7 @@ OTHER OPTIONS:
 	-r/--reverse	Truncates length of the reverse read (default='0')
 	-t/--threads	Number of threads to use (default=$CPUS) <integer>
 	--title		Path to a file containing the title of the project that will be used as title in the report
-			Avoid using special characters. QiimeReporter will use a default title if this option is not used
+			Avoid using special characters. QiimeReporter will use a default title if this option is not passed
 	-v/--version	Show version
 
 ```
@@ -115,7 +91,7 @@ A metadata text file is needed for QiimeReporter to work by using the `-m/--meta
 
 <br>
 
-If you type `qiimereporter example-metadata`, a file called `sample-metadata.tsv` will be created in your working directory that can be used as a template for your own dataset.
+If you type `qiimereporter example-metadata`, a template file called `sample-metadata.tsv` will be created in your working directory.
 
 <br>
 
@@ -128,7 +104,7 @@ QiimeReporter stores every file generated during the analysis in three different
 
 <br>
 
-Once the analysis is finished, QiimeReporter summarizes the results in a interactive web-like report. An example of a report file can be visualized [here](https://dabadgarcia.github.io/qiimereporter/files/).
+Once the analysis is finished, QiimeReporter summarizes the results in a interactive html report. An example can be found [here](https://dabadgarcia.github.io/qiimereporter/example-report.html).
 
 <br>
 
@@ -138,7 +114,7 @@ If you use QiimeReporter before publication is released, please cite as:
   
 David Abad and Marta Hernandez. QiimeReporter. (2019) https://github.com/dabadgarcia/qiimereporter
 
-The dependencies described in [this section](#required-dependencies) are the backbone of QiimeReporter and users are encouraged to cite them when using it.
+Users are algo highly encouraged to cite [Qiime2](https://github.com/qiime2/qiime2) and [R](https://cran.r-project.org/) when using QiimeReporter.
 
 <br>
 
