@@ -36,7 +36,7 @@ QIIMEREPORTERDIR="$( cd -P "$( dirname "$QIIMEREPORTER" )" && pwd )"
 # VARIABLES
 COLOR=
 CPUS=1
-DATABASE=$QIIMEREPORTERDIR/../db/silva/
+DATABASE=$QIIMEREPORTERDIR/../db/silva/silva-132-99-nb-classifier.qza
 DATE="$( date +"%Y-%m-%d" )"
 DODIV=1
 DOHEAT=1
@@ -89,7 +89,7 @@ OTHER OPTIONS:
 	-r/--reverse	Truncates length of the reverse read (default='0')
 	-t/--threads	Number of threads to use (default=$CPUS) <integer>
 	--title		Path to a file containing the title of the project that will be used as title in the report
-			Avoid using special characters. QiimeReporter will use a default title if this option is not used
+			Avoid using special characters. QiimeReporter will use a default title if this option is not passed
 	-v/--version	Show version
 
 For further explanation please visit: https://github.com/dabadgarcia/qiimereporter
@@ -140,7 +140,7 @@ ARGS="$1"
 case $ARGS in
         --citation)
             echo -e "\n If using QiimeReporter, please cite:"
-	    echo -e "\n Abad, D., Hernandez, M. QiimeReporter. (2019) GitHub (https://github.com/dabadgarcia/qiimereporter)\n"
+	    echo -e "\n David Abad and Marta Hernandez. QiimeReporter. (2019) GitHub (https://github.com/dabadgarcia/qiimereporter)\n"
             exit 1
             ;;
 	--color)
@@ -437,10 +437,7 @@ qiime demux summarize --i-data PE-reads.qza --o-visualization PE-reads.qzv >> $O
 echo -e "DADA2 started at: \c" >> $OUTWD/qiimereporter.log
 date +"%Y-%m-%d %H:%M" >> $OUTWD/qiimereporter.log
 qiime dada2 denoise-paired --i-demultiplexed-seqs PE-reads.qza --p-trim-left-f 13 --p-trim-left-r 13 --p-trunc-len-f $TRUNF --p-trunc-len-r $TRUNR --o-representative-sequences rep-seqs.qza --o-table table.qza --o-denoising-stats stats-dada2.qza --p-n-threads $CPUS >> $OUTWD/qiimereporter.log
-qiime metadata tabulate --m-input-file stats-dada2.qza --o-visualization stats-dada2.qzv >> $OUTWD/qiimereporter.log
 qiime tools export --input-path stats-dada2.qza --output-path exported-feature-table >> $OUTWD/qiimereporter.log
-qiime feature-table summarize --i-table table.qza --o-visualization table.qzv --m-sample-metadata-file ../$METADATA >> $OUTWD/qiimereporter.log
-qiime feature-table tabulate-seqs --i-data rep-seqs.qza --o-visualization rep-seqs.qzv >> $OUTWD/qiimereporter.log
 
 ## Taxonomy assignment
 echo -e "Taxonomy assignment started at: \c" >> $OUTWD/qiimereporter.log
