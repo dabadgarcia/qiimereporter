@@ -1,6 +1,6 @@
 #! /bin/bash
 
-#This script is used to install the dependencies not available in Conda. 	
+#This script will install Qiime2, additional R dependencies not available in Conda and the SILVA database (reselase 132).	
 	
 QIIMEREPORTER=$0
 while [ -h "$QIIMEREPORTER" ]; do # resolve $QIIMEREPORTER until the file is no longer a symlink
