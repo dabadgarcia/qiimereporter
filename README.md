@@ -3,61 +3,47 @@
 
 <br>
 
-# QiimeReporter 
-One step pipeline for amplicon sequence analysis.  
-
-## Contents  
-  * [What is QiimeReporter?](#what-is-qiimereporter)
+## Index  
+  * [About](#about)
   * [Installation](#installation)
-      * [Required dependencies](#required-dependencies)
+  	* [Install Miniconda](#install-miniconda)
+	* [Install QiimeReporter](#install-qiimereporter)
   * [Usage](#usage)
-      * [Metadata](#metadata)  
+  * [Metadata](#metadata)  
   * [Output](#output)
   * [Citation](#citation)
   * [License](#license)
 
 <br>
 
-## What is QiimeReporter?
+## About
 
-QiimeReporter is a straightforward pipeline for the analysis of amplicon sequences directly from raw Illumina paired-end data. It integrates the most common [Qiime2](https://github.com/qiime2/qiime2) commands with [R](https://cran.r-project.org/) in order to create a final html report that can be opened in any web browser and easily shareable between researchers.  
-
-<br>
+QiimeReporter is a straightforward pipeline for the analysis of amplicon sequences directly from raw Illumina paired-end data. It integrates the main [Qiime2](https://github.com/qiime2/qiime2) commands with [R](https://cran.r-project.org/) in order to generate a final html report that can be opened in any web browser and easily shared between researchers.  
 
 ## Installation
 
-The philosophy of QiimeReporter is to be user-friendly so it has been prepared as a conda environment. Run the following commands to  install QiimeReporter an its dependencies:  
+QiimeReporter has been developed as a [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) environment to make things easier. 
+
+### Install Miniconda
+
+[Miniconda](https://docs.conda.io/en/latest/miniconda.html) provides the [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) environment and package manager, and is the recommended way to install QiimeReporter: 
+
+```
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+conda update conda
+```
+
+### Install QiimeReporter
+
+Once you have [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed, run the following commands to install QiimeReporter:
 
 ```
 conda create -n qiimereporter
-conda install -c dabadgarcia qiimereporter
-```
-<br>
-
-To activate QiimeReporter environment run:  
-
-```
 conda activate qiimereporter
-```
-<br>
-
-Additionally, the first time you are using QiimeReporter, run (after activating QiimeReporter environment):
-
-```
+conda install -c dabadgarcia qiimereporter
 qiimereporter-setup
 ```
-
-This step will install Qiime 2, additional dependencies not available in conda and the [SILVA](https://www.arb-silva.de/) database (reselase 132).
-
-<br>
-
-### Required dependencies
-QiimeReporter is a pipeline that requires a few dependencies to work:  
-  * [Qiime2](https://github.com/qiime2/qiime2)
-  * [R](https://cran.r-project.org/)
-    * R packages: [ggtree](https://bioconductor.org/packages/release/bioc/html/ggtree.html), [knitr](https://cran.r-project.org/web/packages/knitr/index.html), [plotly](https://cran.r-project.org/web/packages/plotly/index.html), [rmarkdown](https://cran.r-project.org/web/packages/rmarkdown/index.html), [phyloseq](https://github.com/joey711/phyloseq)
-  * [SILVA](https://www.arb-silva.de/)
-   
 <br>
 
 ## Usage
@@ -75,21 +61,21 @@ OBLIGATORY OPTIONS:
 
 OTHER OPTIONS:
 	--citation	Show citation
-	--color 	Multivariate analysis color from sample-metadata
-	-d/--database 	Path to database, must be .qza file (default SILVA132)
-	-f/--forward	Truncates length of the forward read (default='0')
+	--color 	Color multivariate analysis from a categorical variable in sample-metadata 
+	-d/--database 	Path to prefered database, must be .qza file (default SILVA132)
+	-f/--forward	Truncates length of the forward reads (default='0')
 	-h/--help	Show this help
-	--no-diversity	Excludes the diversity indexes from the report
+	--no-diversity	Excludes the diversity index figures from the report
 	--no-heatmap	Excludes the heatmap from the report
 	--no-network	Excludes the network from the report
-	--no-pcoa	Excludes the pcoa from the report
+	--no-pcoa	Excludes the pcoa figures from the report
 	--no-rarefactionExcludes the rarefaction curves from the report
-	--multivariate	Includes other multivariate analysis in the report (NMDS, DCA, PCA, RCA)
-	--report-only	If report files already present, generates the html document 
-	-r/--reverse	Truncates length of the reverse read (default='0')
+	--multivariate	Includes other multivariate analysis in the report (NMDS, DCA, CCA, RCA)
+	--report-only	To generate only html report document, must be executed in the report_files directory
+	-r/--reverse	Truncates length of the reverse reads (default='0')
 	-t/--threads	Number of threads to use (default=$CPUS) <integer>
-	--title		Path to a file containing the title of the project that will be used as title in the report
-			Avoid using special characters. QiimeReporter will use a default title if this option is not used
+	--title		Path to a file containing the title of the report, avoid using special characters 
+			QiimeReporter will use a default title if this option is not passed
 	-v/--version	Show version
 
 ```
@@ -101,7 +87,8 @@ qiimereporter -i raw_reads -m sample-metadata.tsv --output output_folder -t 32
 ```
 <br>
 
-### Metadata
+## Metadata
+
 A metadata text file is needed for QiimeReporter to work by using the `-m/--metadata` option. This file will include all the information regarding the sample and requires an specific organization:  
 - Columns must be tab separated
 	- First row: 
@@ -115,7 +102,7 @@ A metadata text file is needed for QiimeReporter to work by using the `-m/--meta
 
 <br>
 
-If you type `qiimereporter example-metadata`, a file called `sample-metadata.tsv` will be created in your working directory that can be used as a template for your own dataset.
+If you type `qiimereporter example-metadata`, a template file called `sample-metadata.tsv` will be created in your working directory.
 
 <br>
 
@@ -128,7 +115,7 @@ QiimeReporter stores every file generated during the analysis in three different
 
 <br>
 
-Once the analysis is finished, QiimeReporter summarizes the results in a interactive web-like report. An example of a report file can be visualized [here](https://dabadgarcia.github.io/qiimereporter/files/).
+Once the analysis is finished, QiimeReporter summarizes the results in a interactive html report in your output directory.
 
 <br>
 
@@ -138,7 +125,7 @@ If you use QiimeReporter before publication is released, please cite as:
   
 David Abad and Marta Hernandez. QiimeReporter. (2019) https://github.com/dabadgarcia/qiimereporter
 
-The dependencies described in [this section](#required-dependencies) are the backbone of QiimeReporter and users are encouraged to cite them when using it.
+Users are also highly encouraged to cite [Qiime2](https://github.com/qiime2/qiime2) and [R](https://cran.r-project.org/) when using QiimeReporter.
 
 <br>
 
