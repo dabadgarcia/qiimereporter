@@ -26,6 +26,8 @@ QiimeReporter is a straightforward pipeline for the analysis of amplicon sequenc
 
 QiimeReporter has been developed as a [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) environment to make things easier. 
 
+<br>
+
 ### Install Miniconda
 
 [Miniconda](https://docs.conda.io/en/latest/miniconda.html) provides the [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) environment and package manager, and is the recommended way to install QiimeReporter: 
@@ -35,6 +37,8 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
 conda update conda
 ```
+
+<br>
 
 ### Install QiimeReporter
 
@@ -121,7 +125,7 @@ QiimeReporter stores every file generated during the analysis in three different
 
 <br>
 
-Once the analysis is finished, QiimeReporter summarizes the results in a interactive html report. An example can be found [here](https://dabadgarcia.github.io/qiimereporter/example-report.html).
+Once the analysis is finished, QiimeReporter summarizes the results in a interactive html report.
 
 <br>
 
