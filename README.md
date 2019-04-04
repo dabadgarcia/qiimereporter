@@ -6,8 +6,10 @@
 ## Index  
   * [About](#about)
   * [Installation](#installation)
+  	* [Install Miniconda](#install-miniconda)
+	* [Install QiimeReporter](#install-qiimereporter)
   * [Usage](#usage)
-      * [Metadata](#metadata)  
+  * [Metadata](#metadata)  
   * [Output](#output)
   * [Citation](#citation)
   * [License](#license)
@@ -22,7 +24,22 @@ QiimeReporter is a straightforward pipeline for the analysis of amplicon sequenc
 
 ## Installation
 
-The philosophy behind QiimeReporter is to be user-friendly, so it has been prepared as a [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) environment. Run the following commands to install it:  
+QiimeReporter has been developed as a [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) environment to make things easier. 
+
+### Install Miniconda
+
+[Miniconda](https://docs.conda.io/en/latest/miniconda.html) provides the [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) environment and package manager, and is the recommended way to install QiimeReporter: 
+
+```
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+conda update conda
+```
+<br>
+
+### Install QiimeReporter
+
+Once you have [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed, run the following commands to install QiimeReporter:
 
 ```
 conda create -n qiimereporter
@@ -32,7 +49,7 @@ qiimereporter-setup
 ```
 <br>
 
-This last step will install [Qiime2](https://github.com/qiime2/qiime2), additional [R](https://cran.r-project.org/) dependencies not available in [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) and the [SILVA](https://www.arb-silva.de/) database (reselase 132).
+This last step will install [Qiime2](https://github.com/qiime2/qiime2), additional [R](https://cran.r-project.org/) dependencies and the [SILVA](https://www.arb-silva.de/) database (reselase 132).
 
 <br>
 
@@ -51,21 +68,21 @@ OBLIGATORY OPTIONS:
 
 OTHER OPTIONS:
 	--citation	Show citation
-	--color 	Multivariate analysis color from sample-metadata
-	-d/--database 	Path to database, must be .qza file (default SILVA132)
-	-f/--forward	Truncates length of the forward read (default='0')
+	--color 	Color multivariate analysis from a categorical variable in sample-metadata 
+	-d/--database 	Path to prefered database, must be .qza file (default SILVA132)
+	-f/--forward	Truncates length of the forward reads (default='0')
 	-h/--help	Show this help
-	--no-diversity	Excludes the diversity indexes from the report
+	--no-diversity	Excludes the diversity index figures from the report
 	--no-heatmap	Excludes the heatmap from the report
 	--no-network	Excludes the network from the report
-	--no-pcoa	Excludes the pcoa from the report
+	--no-pcoa	Excludes the pcoa figures from the report
 	--no-rarefactionExcludes the rarefaction curves from the report
-	--multivariate	Includes other multivariate analysis in the report (NMDS, DCA, PCA, RCA)
-	--report-only	If report files already present, generates the html document 
-	-r/--reverse	Truncates length of the reverse read (default='0')
+	--multivariate	Includes other multivariate analysis in the report (NMDS, DCA, CCA, RCA)
+	--report-only	To generate only html report document, must be executed in the report_files directory
+	-r/--reverse	Truncates length of the reverse reads (default='0')
 	-t/--threads	Number of threads to use (default=$CPUS) <integer>
-	--title		Path to a file containing the title of the project that will be used as title in the report
-			Avoid using special characters. QiimeReporter will use a default title if this option is not passed
+	--title		Path to a file containing the title of the report, avoid using special characters 
+			QiimeReporter will use a default title if this option is not passed
 	-v/--version	Show version
 
 ```
@@ -77,7 +94,8 @@ qiimereporter -i raw_reads -m sample-metadata.tsv --output output_folder -t 32
 ```
 <br>
 
-### Metadata
+## Metadata
+
 A metadata text file is needed for QiimeReporter to work by using the `-m/--metadata` option. This file will include all the information regarding the sample and requires an specific organization:  
 - Columns must be tab separated
 	- First row: 
@@ -114,7 +132,7 @@ If you use QiimeReporter before publication is released, please cite as:
   
 David Abad and Marta Hernandez. QiimeReporter. (2019) https://github.com/dabadgarcia/qiimereporter
 
-Users are algo highly encouraged to cite [Qiime2](https://github.com/qiime2/qiime2) and [R](https://cran.r-project.org/) when using QiimeReporter.
+Users are also highly encouraged to cite [Qiime2](https://github.com/qiime2/qiime2) and [R](https://cran.r-project.org/) when using QiimeReporter.
 
 <br>
 
