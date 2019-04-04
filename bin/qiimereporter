@@ -31,8 +31,6 @@ while [ -h "$QIIMEREPORTER" ]; do # resolve $QIIMEREPORTER until the file is no 
 done
 QIIMEREPORTERDIR="$( cd -P "$( dirname "$QIIMEREPORTER" )" && pwd )"
 
-## QIIMEREPORTERREPORT=$QIIMEREPORTERDIR/QIIMEREPORTER-report
-
 # VARIABLES
 COLOR=
 CPUS=1
@@ -75,24 +73,22 @@ OBLIGATORY OPTIONS:
 
 OTHER OPTIONS:
 	--citation	Show citation
-	--color 	Multivariate analysis color from sample-metadata
-	-d/--database 	Path to database, must be .qza file (default SILVA132)
-	-f/--forward	Truncates length of the forward read (default='0')
+	--color 	Color multivariate analysis from a categorical variable in sample-metadata 
+	-d/--database 	Path to prefered database, must be .qza file (default SILVA132)
+	-f/--forward	Truncates length of the forward reads (default='0')
 	-h/--help	Show this help
-	--no-diversity	Excludes the diversity indexes from the report
+	--no-diversity	Excludes the diversity index figures from the report
 	--no-heatmap	Excludes the heatmap from the report
 	--no-network	Excludes the network from the report
-	--no-pcoa	Excludes the pcoa from the report
+	--no-pcoa	Excludes the pcoa figures from the report
 	--no-rarefactionExcludes the rarefaction curves from the report
-	--multivariate	Includes other multivariate analysis in the report (NMDS, DCA, PCA, RCA)
-	--report-only	If report files already present, generates the html document 
-	-r/--reverse	Truncates length of the reverse read (default='0')
+	--multivariate	Includes other multivariate analysis in the report (NMDS, DCA, CCA, RCA)
+	--report-only	To generate only html report document, must be executed in the report_files directory
+	-r/--reverse	Truncates length of the reverse reads (default='0')
 	-t/--threads	Number of threads to use (default=$CPUS) <integer>
-	--title		Path to a file containing the title of the project that will be used as title in the report
-			Avoid using special characters. QiimeReporter will use a default title if this option is not passed
+	--title		Path to a file containing the title of the report, avoid using special characters 
+			QiimeReporter will use a default title if this option is not passed
 	-v/--version	Show version
-
-For further explanation please visit: https://github.com/dabadgarcia/qiimereporter
 
 EOF
 }
@@ -391,9 +387,7 @@ fi
 rm -f temp1
 rm -f temp2
 
-# CHECK DEPENDENCIES?? 
-
-# QIIME
+# QIIME2
 
 ## Create output folder 
 mkdir -p $OUTPUT
@@ -431,7 +425,6 @@ echo ""
 ## Importing Illumina sequences from Raw_reads folder
 qiime tools import --type 'SampleData[PairedEndSequencesWithQuality]' --input-path ../$INPUT --output-path PE-reads.qza --input-format CasavaOneEightSingleLanePerSampleDirFmt >> $OUTWD/qiimereporter.log
 qiime tools peek PE-reads.qza >> $OUTWD/qiimereporter.log
-qiime demux summarize --i-data PE-reads.qza --o-visualization PE-reads.qzv >> $OUTWD/qiimereporter.log
 
 ## Quality trimming and ASV generation
 echo -e "DADA2 started at: \c" >> $OUTWD/qiimereporter.log
@@ -496,7 +489,9 @@ mv ../table-with-taxonomy.biom table-with-taxonomy_nc.biom
 mv ../exported-feature-table/tree.nwk .
 mv ../final-otu_table_* .
 mv ../sample-info.tsv .
+if [ -e "$TITLEFILE" ]; then
 mv ../../$TITLEFILE .
+fi
 
 ## Converting biom file to json for phyloseq
 
@@ -1237,11 +1232,14 @@ if [ "$DOREP" == '1' ]; then
 cd ..
 mkdir $OUTWD/qiime2_artifacts
 mv *.qza $OUTWD/qiime2_artifacts/
-mv *.qzv $OUTWD/qiime2_artifacts/
 rm -r $OUTWD/exported-feature-table
 mkdir $OUTWD/complete_taxonomy_otutables
 mv otu_table_* $OUTWD/complete_taxonomy_otutables/
 fi
+
+if [ "$DOREP" == '0' ]; then
+rm -r $OUTWD/report_files/report_files
+fi 
 
 # Calculate the difference
 let time=${end}-${start}
