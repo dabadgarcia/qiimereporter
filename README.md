@@ -20,13 +20,9 @@
 
 QiimeReporter is a straightforward pipeline for the analysis of amplicon sequences directly from raw Illumina paired-end data. It integrates the main [Qiime2](https://github.com/qiime2/qiime2) commands with [R](https://cran.r-project.org/) in order to generate a final html report that can be opened in any web browser and easily shared between researchers.  
 
-<br>
-
 ## Installation
 
 QiimeReporter has been developed as a [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) environment to make things easier. 
-
-<br>
 
 ### Install Miniconda
 
@@ -37,8 +33,6 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
 conda update conda
 ```
-
-<br>
 
 ### Install QiimeReporter
 
