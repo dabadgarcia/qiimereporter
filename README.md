@@ -52,10 +52,6 @@ qiimereporter-setup
 ```
 <br>
 
-This last step will install [Qiime2](https://github.com/qiime2/qiime2), additional [R](https://cran.r-project.org/) dependencies and the [SILVA](https://www.arb-silva.de/) database (reselase 132).
-
-<br>
-
 ## Usage
 ```
 usage: qiimereporter <options>
