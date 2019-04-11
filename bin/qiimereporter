@@ -36,6 +36,7 @@ COLOR=
 CPUS=1
 DATABASE=$QIIMEREPORTERDIR/../db/silva/silva-132-99-nb-classifier.qza
 DATE="$( date +"%Y-%m-%d" )"
+DEPTH=10000
 DODIV=1
 DOHEAT=1
 DONET=1
@@ -64,10 +65,9 @@ usage: $0 <options>
 
 OBLIGATORY OPTIONS:
 	-i/--input 	Path to the directory where the raw reads are located
-	-m/--metadata	Path to the file with the metadata regarding the samples
-			The file must have an specific organization for the program to work
-			If you don't have any or you would like to have an example or extra information, 
-			please type: 
+	-m/--metadata	Path to the Qiime2 metadata file
+			It must have an specific organization for the program to work. 
+			If you would like to generate an example, please type:
 			$0 example-metadata
 	-o/--output	Path and name of the output directory
 
@@ -75,6 +75,7 @@ OTHER OPTIONS:
 	--citation	Show citation
 	--color 	Color multivariate analysis from a categorical variable in sample-metadata 
 	-d/--database 	Path to prefered database, must be .qza file (default SILVA132)
+	--depth		Minimun number of reads for a sample to be included in the rarefaction figure
 	-f/--forward	Truncates length of the forward reads (default='0')
 	-h/--help	Show this help
 	--no-diversity	Excludes the diversity index figures from the report
@@ -111,7 +112,7 @@ EOF
 
 cat << EOF
 
-An example "sample-metadata.tsv" has been created in the current directory
+An example of the Qiime2 "sample-metadata.tsv" has been created in the current directory
 Modify it in your preferred text editor by respecting the organization of the example:
 	- Columns must be tab separated
 	- First row: 
@@ -122,6 +123,8 @@ Modify it in your preferred text editor by respecting the organization of the ex
 	- Second row: 
 		- First column must me called "#q2:types" and specifies type of variable for each column
 		- Columns should be clasiffied into "categorical" if they are non-numeric values and "numeric" if the column consists only of numbers. Missing data (i.e. empty cells) are supported in categorical columns as well as numeric columns
+If you need more information, please check: <https://docs.qiime2.org/2018.8/tutorials/metadata/>
+
 EOF
         exit 1
 fi
@@ -165,18 +168,24 @@ case $ARGS in
                 exit 1
             fi
             ;; 
-	-f|--forward)
-            if [ "$2" ]; then
-                if [ "$2" -eq "$2"  ] 2>/dev/null ; then
-                    TRUNF=$2
-                    shift 2
-                else
-                        echo -e '\nERROR: "--forward" requires a numeric argument'
-                        echo -e "argument parsed: $2 \n"
-                        exit 1
-                fi
+	--depth)
+	    if [ "$2" -eq "$2"  ] 2>/dev/null ; then
+                DEPTH=$2
+                shift 2
             else
-                echo -e '\nERROR: "--forward" requires a numeric argument\n'
+                echo -e '\nERROR: "--depth" requires a numeric argument'
+                echo -e "argument parsed: $2 \n"
+                exit 1
+            fi
+	    ;;
+	-f|--forward)
+            if [ "$2" -eq "$2"  ] 2>/dev/null ; then
+                TRUNF=$2
+                shift 2
+            else
+                echo -e '\nERROR: "--forward" requires a numeric argument'
+                echo -e "argument parsed: $2 \n"
+                exit 1
             fi
             ;;
 	-h|-\?|--help)
@@ -251,32 +260,24 @@ case $ARGS in
             shift
             ;;
 	-r|--reverse)
-            if [ "$2" ]; then
-                if [ "$2" -eq "$2"  ] 2>/dev/null ; then
-                    TRUNR=$2
-                    shift 2
-                else
-                        echo -e '\nERROR: "--reverse" requires a numeric argument'
-                        echo -e "argument parsed: $2 \n"
-                        exit 1
-                fi
+            if [ "$2" -eq "$2"  ] 2>/dev/null ; then
+                TRUNR=$2
+                shift 2
             else
-                echo -e '\nERROR: "--reverse" requires a numeric argument\n'
+                echo -e '\nERROR: "--reverse" requires a numeric argument'
+                echo -e "argument parsed: $2 \n"
+                exit 1
             fi
             ;;
-	-t|--threads)
-	    if [ "$2" ]; then    
-		if [ "$2" -eq "$2"  ] 2>/dev/null ; then
-                    CPUS=$2
-                    shift 2
-                else
-                        echo -e '\nERROR: "-t/--threads" requires a numeric argument'
-                        echo -e "argument parsed: $2 \n"
-                        exit 1
-                fi
-	    else
-		echo -e '\nERROR: "-t/--threads" requires a numeric argument\n'
-    	    fi
+	-t|--threads) 
+	    if [ "$2" -eq "$2"  ] 2>/dev/null ; then
+                CPUS=$2
+                shift 2
+            else
+                echo -e '\nERROR: "-t/--threads" requires a numeric argument'
+                echo -e "argument parsed: $2 \n"
+                exit 1
+            fi
 	    ;;
 	--title)
             if [ "$2" ]; then
@@ -399,8 +400,6 @@ fi
 OUTEMP="$( cd -P "$( dirname "$OUTPUT" )" && pwd )"
 OUTWD="$OUTEMP/$OUTPUT"
 
-cd $OUTWD
-
 cat << EOF
 
 Thanks for using QiimeReporter version $VERSION
@@ -423,80 +422,79 @@ date +"%Y-%m-%d %H:%M" >> $OUTWD/qiimereporter.log
 echo ""
 
 ## Importing Illumina sequences from Raw_reads folder
-qiime tools import --type 'SampleData[PairedEndSequencesWithQuality]' --input-path ../$INPUT --output-path PE-reads.qza --input-format CasavaOneEightSingleLanePerSampleDirFmt >> $OUTWD/qiimereporter.log
-qiime tools peek PE-reads.qza >> $OUTWD/qiimereporter.log
+qiime tools import --type 'SampleData[PairedEndSequencesWithQuality]' --input-path $INPUT --output-path $OUTWD/PE-reads.qza --input-format CasavaOneEightSingleLanePerSampleDirFmt >> $OUTWD/qiimereporter.log
+qiime tools peek $OUTWD/PE-reads.qza >> $OUTWD/qiimereporter.log
 
 ## Quality trimming and ASV generation
 echo -e "DADA2 started at: \c" >> $OUTWD/qiimereporter.log
 date +"%Y-%m-%d %H:%M" >> $OUTWD/qiimereporter.log
-qiime dada2 denoise-paired --i-demultiplexed-seqs PE-reads.qza --p-trim-left-f 13 --p-trim-left-r 13 --p-trunc-len-f $TRUNF --p-trunc-len-r $TRUNR --o-representative-sequences rep-seqs.qza --o-table table.qza --o-denoising-stats stats-dada2.qza --p-n-threads $CPUS >> $OUTWD/qiimereporter.log
-qiime tools export --input-path stats-dada2.qza --output-path exported-feature-table >> $OUTWD/qiimereporter.log
+qiime dada2 denoise-paired --i-demultiplexed-seqs $OUTWD/PE-reads.qza --p-trim-left-f 13 --p-trim-left-r 13 --p-trunc-len-f $TRUNF --p-trunc-len-r $TRUNR --o-representative-sequences $OUTWD/rep-seqs.qza --o-table $OUTWD/table.qza --o-denoising-stats $OUTWD/stats-dada2.qza --p-n-threads $CPUS >> $OUTWD/qiimereporter.log
+qiime tools export --input-path $OUTWD/stats-dada2.qza --output-path $OUTWD/exported-feature-table >> $OUTWD/qiimereporter.log
 
 ## Taxonomy assignment
 echo -e "Taxonomy assignment started at: \c" >> $OUTWD/qiimereporter.log
 date +"%Y-%m-%d %H:%M" >> $OUTWD/qiimereporter.log
-qiime feature-classifier classify-sklearn --i-classifier $DATABASE --i-reads rep-seqs.qza --o-classification taxonomy.qza --p-n-jobs $CPUS >> $OUTWD/qiimereporter.log
-qiime tools export --input-path table.qza --output-path exported-feature-table >> $OUTWD/qiimereporter.log
-qiime tools export --input-path taxonomy.qza --output-path exported-feature-table >> $OUTWD/qiimereporter.log
-sed  's/Feature ID\tTaxon\tConfidence/#OTUID\ttaxonomy\tconfidence/g' exported-feature-table/taxonomy.tsv > exported-feature-table/biom-taxonomy.tsv
-biom add-metadata -i exported-feature-table/feature-table.biom -o table-with-taxonomy.biom --observation-metadata-fp exported-feature-table/biom-taxonomy.tsv --sc-separated taxonomy 
+qiime feature-classifier classify-sklearn --i-classifier $DATABASE --i-reads $OUTWD/rep-seqs.qza --o-classification $OUTWD/taxonomy.qza --p-n-jobs $CPUS >> $OUTWD/qiimereporter.log
+qiime tools export --input-path $OUTWD/table.qza --output-path $OUTWD/exported-feature-table >> $OUTWD/qiimereporter.log
+qiime tools export --input-path $OUTWD/taxonomy.qza --output-path $OUTWD/exported-feature-table >> $OUTWD/qiimereporter.log
+sed  's/Feature ID\tTaxon\tConfidence/#OTUID\ttaxonomy\tconfidence/g' $OUTWD/exported-feature-table/taxonomy.tsv > $OUTWD/exported-feature-table/biom-taxonomy.tsv
+biom add-metadata -i $OUTWD/exported-feature-table/feature-table.biom -o $OUTWD/table-with-taxonomy.biom --observation-metadata-fp $OUTWD/exported-feature-table/biom-taxonomy.tsv --sc-separated taxonomy 
 	
 ## Tree generation
 echo -e "Tree generation started at: \c" >> $OUTWD/qiimereporter.log
 date +"%Y-%m-%d %H:%M" >> $OUTWD/qiimereporter.log
-qiime alignment mafft --i-sequences rep-seqs.qza --o-alignment aligned-rep-seqs.qza --p-n-threads $CPUS >> $OUTWD/qiimereporter.log
-qiime alignment mask --i-alignment aligned-rep-seqs.qza --o-masked-alignment masked-aligned-rep-seqs.qza >> $OUTWD/qiimereporter.log
-qiime phylogeny fasttree --i-alignment masked-aligned-rep-seqs.qza --o-tree unrooted-tree.qza --p-n-threads 32 >> $OUTWD/qiimereporter.log
-qiime phylogeny midpoint-root --i-tree unrooted-tree.qza --o-rooted-tree rooted-tree.qza >> $OUTWD/qiimereporter.log
-qiime tools export --input-path rooted-tree.qza --output-path exported-feature-table >> $OUTWD/qiimereporter.log
+qiime alignment mafft --i-sequences $OUTWD/rep-seqs.qza --o-alignment $OUTWD/aligned-rep-seqs.qza --p-n-threads $CPUS >> $OUTWD/qiimereporter.log
+qiime alignment mask --i-alignment $OUTWD/aligned-rep-seqs.qza --o-masked-alignment $OUTWD/masked-aligned-rep-seqs.qza >> $OUTWD/qiimereporter.log
+qiime phylogeny fasttree --i-alignment $OUTWD/masked-aligned-rep-seqs.qza --o-tree $OUTWD/unrooted-tree.qza --p-n-threads 32 >> $OUTWD/qiimereporter.log
+qiime phylogeny midpoint-root --i-tree $OUTWD/unrooted-tree.qza --o-rooted-tree $OUTWD/rooted-tree.qza >> $OUTWD/qiimereporter.log
+qiime tools export --input-path $OUTWD/rooted-tree.qza --output-path $OUTWD/exported-feature-table >> $OUTWD/qiimereporter.log
 
 ## Formatting files for report
 
 # Creating sample information file with read stats
-awk '{print $2,$6}' exported-feature-table/stats.tsv > stats-temp.tsv
-paste ../sample-metadata.tsv stats-temp.tsv > sample-info.tsv
-sed -i '2d;s/^#//' sample-info.tsv
-sed -i 's/ /\t/' sample-info.tsv
-rm stats-temp.tsv
+awk '{print $2,$6}' $OUTWD/exported-feature-table/stats.tsv > $OUTWD/stats-temp.tsv
+paste sample-metadata.tsv $OUTWD/stats-temp.tsv > $OUTWD/sample-info.tsv
+sed -i '2d;s/^#//' $OUTWD/sample-info.tsv
+sed -i 's/ /\t/' $OUTWD/sample-info.tsv
+rm $OUTWD/stats-temp.tsv
 
 ### OTU tables
 #### Extract all levels from qiime2 results
 for i in 2 3 4 5 6 7; do
-	qiime taxa collapse --i-table table.qza --i-taxonomy taxonomy.qza --p-level $i --o-collapsed-table tablelevel-$i.qza >> $OUTWD/qiimereporter.log
-	qiime tools export --input-path tablelevel-$i.qza --output-path exported-feature-table-$i >> $OUTWD/qiimereporter.log
-	biom convert -i exported-feature-table-$i/feature-table.biom -o otu_table_level-$i.txt --to-tsv
-	rm -r exported-feature-table-$i
-	rm tablelevel-$i.qza
+	qiime taxa collapse --i-table $OUTWD/table.qza --i-taxonomy $OUTWD/taxonomy.qza --p-level $i --o-collapsed-table $OUTWD/tablelevel-$i.qza >> $OUTWD/qiimereporter.log
+	qiime tools export --input-path $OUTWD/tablelevel-$i.qza --output-path $OUTWD/exported-feature-table-$i >> $OUTWD/qiimereporter.log
+	biom convert -i $OUTWD/exported-feature-table-$i/feature-table.biom -o $OUTWD/otu_table_level-$i.txt --to-tsv
+	rm -r $OUTWD/exported-feature-table-$i
+	rm $OUTWD/tablelevel-$i.qza
 done
 
 #### Removes everything but final taxonomic level
-for i in $(ls otu_table_level*); do
-	sed -i '1d;s/^#//' $i
-	sed -i 's/ /_/g' $i 
-	awk '{print $1}' $i > temp-$i
-	sed -i 's/\;D_[0-7]__uncultured.*//g' temp-$i
-	sed -i 's/\;D_[0-7]__metagenome//g' temp-$i
-	sed -i 's@.*[0-7]__@@' temp-$i 
-	sed -i 's/\;__//g' temp-$i
-	paste temp-$i $i | sed -r 's/\S+//2' > final-$i
-	rm temp-$i
+for i in $(ls $OUTWD/otu_table_level*); do
+	sed -i '1d;s/^#//' $OUTWD/$i
+	sed -i 's/ /_/g' $OUTWD/$i 
+	awk '{print $1}' $OUTWD/$i > $OUTWD/temp-$i
+	sed -i 's/\;D_[0-7]__uncultured.*//g' $OUTWD/temp-$i
+	sed -i 's/\;D_[0-7]__metagenome//g' $OUTWD/temp-$i
+	sed -i 's@.*[0-7]__@@' $OUTWD/temp-$i 
+	sed -i 's/\;__//g' $OUTWD/temp-$i
+	paste $OUTWD/temp-$i $OUTWD/$i | sed -r 's/\S+//2' > $OUTWD/final-$i
+	rm $OUTWD/temp-$i
 done
 
 ## Create report_files folder
 mkdir $OUTWD/report_files
-cd $OUTWD/report_files
-mv ../table-with-taxonomy.biom table-with-taxonomy_nc.biom 
-mv ../exported-feature-table/tree.nwk .
-mv ../final-otu_table_* .
-mv ../sample-info.tsv .
+mv $OUTWD/table-with-taxonomy.biom $OUTWD/report_filestable-with-taxonomy_nc.biom 
+mv $OUTWD/exported-feature-table/tree.nwk $OUTWD/report_files/tree.nwk
+mv $OUTWD/final-otu_table_* $OUTWD/report_files/final-otu_table_*
+mv $OUTWD/sample-info.tsv $OUTWD/report_files/sample-info.tsv
 if [ -e "$TITLEFILE" ]; then
-mv ../../$TITLEFILE .
+mv $TITLEFILE $OUTWD/report_files/$TITLEFILE
 fi
 
 ## Converting biom file to json for phyloseq
 
-biom convert -i table-with-taxonomy_nc.biom -o table-with-taxonomy.biom --table-type="OTU table" --to-json
-rm table-with-taxonomy_nc.biom
+biom convert -i $OUTWD/report_files/table-with-taxonomy_nc.biom -o $OUTWD/report_files/table-with-taxonomy.biom --table-type="OTU table" --to-json
+rm $OUTWD/report_files/table-with-taxonomy_nc.biom
 
 fi
 
@@ -514,7 +512,7 @@ else
 	TITLE="Analysis Performed on $DATE"
 fi
 
-cat << EOF > report.Rmd
+cat << EOF > $OUTWD/report_files/report.Rmd
 ---
 title: "$TITLE"
 date: "$DATE"
@@ -576,11 +574,11 @@ colnames(tax_table(DOM))[7] = "Species"
 EOF
 
 if [ "$DORAR" == '1' ]; then
-cat << EOF >> report.Rmd
+cat << EOF >> $OUTWD/report_files/report.Rmd
 ## Rarefaction curves
 ### Figure 1. Rarefaction curves for each sample.
 \`\`\`{r echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
-table_otu_even = rarefy_even_depth(table_otu, sample.size = 10000, trimOTUs = TRUE)
+table_otu_even = rarefy_even_depth(table_otu, sample.size = $DEPTH, trimOTUs = TRUE)
 DOM_even = merge_phyloseq(table_otu_even, metadata, tree)
 p0 = ggrare(DOM_even, step = 1000, color = "SampleID", parallel = TRUE, plot = FALSE)
 p0 = p0 + theme_bw()
@@ -592,7 +590,7 @@ print(p0)
 EOF
 fi
 
-cat << EOF >> report.Rmd
+cat << EOF >> $OUTWD/report_files/report.Rmd
 ## Most abundant taxa
 #### Select the taxonomic level {.tabset .tabset-fade .tabset-pills}
 ##### Species
@@ -900,7 +898,7 @@ colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","ligh
              "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
 	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
 
-# , steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
+#steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
 
 library(ggplot2)
 p<-ggplot(df,aes(SAMPLE,Value,fill=TAXA))+geom_bar(stat="identity")
@@ -918,7 +916,7 @@ ggplotly(p)
 EOF
 
 if [ "$DOPCOA" == '1' ] && [ "$COLOR" ]; then
-cat << EOF >> report.Rmd
+cat << EOF >> $OUTWD/report_files/report.Rmd
 ## Multivariate analysis
 #### Select the visualization {.tabset .tabset-fade .tabset-pills}
 ##### PCoA
@@ -962,7 +960,7 @@ EOF
 fi
 
 if [ "$DOPCOA" == '1' ] && [ "$COLOR" == '' ]; then
-cat << EOF >> report.Rmd
+cat << EOF >> $OUTWD/report_files/report.Rmd
 ## Multivariate analysis
 #### Select the visualization {.tabset .tabset-fade .tabset-pills}
 ##### PCoA
@@ -1006,7 +1004,7 @@ EOF
 fi
 
 if [ "$MULTI" == '1' ] && [ "$COLOR" ]; then
-cat << EOF >> report.Rmd
+cat << EOF >> $OUTWD/report_files/report.Rmd
 ## Other multivariate analysis
 #### Select the plot {.tabset .tabset-fade .tabset-pills}
 
@@ -1062,7 +1060,7 @@ EOF
 fi
 
 if [ "$MULTI" == '1' ] && [ "$COLOR" == '' ]; then
-cat << EOF >> report.Rmd
+cat << EOF >> $OUTWD/report_files/report.Rmd
 ## Other multivariate analysis
 #### Select the plot {.tabset .tabset-fade .tabset-pills}
 
@@ -1104,7 +1102,7 @@ EOF
 fi
 
 if [ "$DODIV" == '1' ] && [ "$COLOR" ]; then
-cat << EOF >> report.Rmd
+cat << EOF >> $OUTWD/report_files/report.Rmd
 ## Diversity indexes
 #### Select index {.tabset .tabset-fade .tabset-pills}
 ##### Chao1
@@ -1137,7 +1135,7 @@ EOF
 fi
 
 if [ "$DODIV" == '1' ] && [ "$COLOR" == '' ]; then
-cat << EOF >> report.Rmd
+cat << EOF >> $OUTWD/report_files/report.Rmd
 ## Diversity indexes
 #### Select index {.tabset .tabset-fade .tabset-pills}
 ##### Chao1
@@ -1170,7 +1168,7 @@ EOF
 fi
 
 if [ "$DOHEAT" == '1' ]; then
-cat << EOF >> report.Rmd
+cat << EOF >> $OUTWD/report_files/report.Rmd
 ## Heatmap
 \`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
 # Plot a heatmap
@@ -1184,7 +1182,7 @@ EOF
 fi
 
 if [ "$DONET" == '1' ] && [ "$COLOR" ]; then
-cat << EOF >> report.Rmd
+cat << EOF >> $OUTWD/report_files/report.Rmd
 ## Network
 \`\`\`{r echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
 ig = make_network(DOM, type = "samples", distance = "bray", max.dist = 0.7)
@@ -1195,7 +1193,7 @@ EOF
 fi
 
 if [ "$DONET" == '1' ] && [ "$COLOR" == '' ]; then
-cat << EOF >> report.Rmd
+cat << EOF >> $OUTWD/report_files/report.Rmd
 ## Network
 \`\`\`{r echo=FALSE, message=FALSE, warning=FALSE, results="hide"}
 ig = make_network(DOM, type = "samples", distance = "bray", max.dist = 0.7)
@@ -1207,17 +1205,19 @@ fi
 
 # Executing de Rmd
 if [ "$DOREP" == '1' ]; then
-	echo -e "Rscript -e 'library(rmarkdown); rmarkdown::render(\"$OUTWD/report_files/report.Rmd\", \"html_document\", encoding=\"UTF-8\")'" > report.sh
+	echo -e "Rscript -e 'library(rmarkdown); rmarkdown::render(\"$OUTWD/report_files/report.Rmd\", \"html_document\", encoding=\"UTF-8\")'" > $OUTWD/report_files/report.sh
+	chmod 755 $OUTWD/report_files/report.sh 
+	./report.sh &>$OUTWD/report_files/report.log
+	rm $OUTWD/report_files/report.sh
 else 
 	echo -e "Rscript -e 'library(rmarkdown); rmarkdown::render(\"report.Rmd\", \"html_document\", encoding=\"UTF-8\")'" > report.sh
+	chmod 755 report.sh 
+	./report.sh &>report.log
+	rm report.sh
 fi
 
-chmod 755 report.sh 
-./report.sh &>report.log
-rm report.sh
-
 if [ -s report.html ]; then
-	mv report.html ../report.html
+	mv $OUTWD/report_files/report.html $OUTWD/report.html
 else
 	echo
 	echo -e "WARNING: html report file could not be created"
@@ -1226,15 +1226,14 @@ fi
 end=`date +%s`
 
 # Final details
-#rm report.Rmd
+# rm report.Rmd
 
 if [ "$DOREP" == '1' ]; then
-cd ..
 mkdir $OUTWD/qiime2_artifacts
-mv *.qza $OUTWD/qiime2_artifacts/
+mv $OUTWD/*.qza $OUTWD/qiime2_artifacts/
 rm -r $OUTWD/exported-feature-table
 mkdir $OUTWD/complete_taxonomy_otutables
-mv otu_table_* $OUTWD/complete_taxonomy_otutables/
+mv $OUTWD/otu_table_* $OUTWD/complete_taxonomy_otutables/
 fi
 
 if [ "$DOREP" == '0' ]; then
