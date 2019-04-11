@@ -65,6 +65,7 @@ OTHER OPTIONS:
 	--citation	Show citation
 	--color 	Color multivariate analysis from a categorical variable in sample-metadata 
 	-d/--database 	Path to prefered database, must be .qza file (default SILVA132)
+	--depth		Minimun number of reads for a sample to be included in the rarefaction figure
 	-f/--forward	Truncates length of the forward reads (default='0')
 	-h/--help	Show this help
 	--no-diversity	Excludes the diversity index figures from the report
@@ -91,7 +92,7 @@ qiimereporter -i raw_reads -m sample-metadata.tsv --output output_folder -t 32
 
 ## Metadata
 
-A metadata text file is needed for QiimeReporter to work by using the `-m/--metadata` option. This file will include all the information regarding the sample and requires an specific organization:  
+A Qiime2 metadata text file is needed for QiimeReporter to work by using the `-m/--metadata` option. This file will include all the information regarding the sample and requires an specific organization:  
 - Columns must be tab separated
 	- First row: 
 		- First column must me called "#SampleID" and harbor samples names (avoid special characters)
@@ -104,7 +105,7 @@ A metadata text file is needed for QiimeReporter to work by using the `-m/--meta
 
 <br>
 
-If you type `qiimereporter example-metadata`, a template file called `sample-metadata.tsv` will be created in your working directory.
+If you type `qiimereporter example-metadata`, a Qiime2 template file called `sample-metadata.tsv` will be created in your working directory. More information about the metadata file can be found [here](https://docs.qiime2.org/2018.8/tutorials/metadata/).
 
 <br>
 
