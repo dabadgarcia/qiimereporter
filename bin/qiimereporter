@@ -445,18 +445,19 @@ echo -e "Tree generation started at: \c" >> $OUTWD/qiimereporter.log
 date +"%Y-%m-%d %H:%M" >> $OUTWD/qiimereporter.log
 qiime alignment mafft --i-sequences $OUTWD/rep-seqs.qza --o-alignment $OUTWD/aligned-rep-seqs.qza --p-n-threads $CPUS >> $OUTWD/qiimereporter.log
 qiime alignment mask --i-alignment $OUTWD/aligned-rep-seqs.qza --o-masked-alignment $OUTWD/masked-aligned-rep-seqs.qza >> $OUTWD/qiimereporter.log
-qiime phylogeny fasttree --i-alignment $OUTWD/masked-aligned-rep-seqs.qza --o-tree $OUTWD/unrooted-tree.qza --p-n-threads 32 >> $OUTWD/qiimereporter.log
+qiime phylogeny fasttree --i-alignment $OUTWD/masked-aligned-rep-seqs.qza --o-tree $OUTWD/unrooted-tree.qza --p-n-threads $CPUS >> $OUTWD/qiimereporter.log
 qiime phylogeny midpoint-root --i-tree $OUTWD/unrooted-tree.qza --o-rooted-tree $OUTWD/rooted-tree.qza >> $OUTWD/qiimereporter.log
 qiime tools export --input-path $OUTWD/rooted-tree.qza --output-path $OUTWD/exported-feature-table >> $OUTWD/qiimereporter.log
 
 ## Formatting files for report
 
 # Creating sample information file with read stats
-awk '{print $2,$6}' $OUTWD/exported-feature-table/stats.tsv > $OUTWD/stats-temp.tsv
-paste sample-metadata.tsv $OUTWD/stats-temp.tsv > $OUTWD/sample-info.tsv
+cut -f2,6 $OUTWD/exported-feature-table/stats.tsv > $OUTWD/stats-temp.tsv
+cut -f2,3 --complement sample-metadata.tsv > $OUTWD/metadata-temp.tsv
+paste $OUTWD/metadata-temp.tsv $OUTWD/stats-temp.tsv > $OUTWD/sample-info.tsv
 sed -i '2d;s/^#//' $OUTWD/sample-info.tsv
-sed -i 's/ /\t/' $OUTWD/sample-info.tsv
 rm $OUTWD/stats-temp.tsv
+rm $OUTWD/metadata-temp.tsv
 
 ### OTU tables
 #### Extract all levels from qiime2 results
@@ -545,8 +546,6 @@ knitr::opts_chunk\$set(root.dir = getwd(), out.width="1200px", dpi=150, fig.alig
 ## Sample information
 \`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
 table <- read.table(file = "sample-info.tsv",row.names=1, header = T, sep="\t")
-table\$BarcodeSequence <- NULL
-table\$LinkerPrimerSequence <- NULL
 Nice.Table(table)
 \`\`\` 
 
