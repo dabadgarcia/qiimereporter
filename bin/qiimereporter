@@ -369,8 +369,6 @@ if [ $HEADER != "LinkerPrimerSequence" ]; then
         exit 1
 fi
 
-## Check if categorical and numerical columns are correct 
-
 ## Check if sample names are unique
 
 duplicate_check() {
@@ -453,7 +451,7 @@ qiime tools export --input-path $OUTWD/rooted-tree.qza --output-path $OUTWD/expo
 
 # Creating sample information file with read stats
 cut -f2,6 $OUTWD/exported-feature-table/stats.tsv > $OUTWD/stats-temp.tsv
-cut -f2,3 --complement sample-metadata.tsv > $OUTWD/metadata-temp.tsv
+cut -f2,3 --complement $METADATA > $OUTWD/metadata-temp.tsv
 paste $OUTWD/metadata-temp.tsv $OUTWD/stats-temp.tsv > $OUTWD/sample-info.tsv
 sed -i '2d;s/^#//' $OUTWD/sample-info.tsv
 rm $OUTWD/stats-temp.tsv
