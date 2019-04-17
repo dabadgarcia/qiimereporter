@@ -346,8 +346,6 @@ if [ $NCOL -lt "4" ]; then
 	exit 1
 fi
 
-rm -f temp1
-
 read HEADER <<< $(head -n 1 $METADATA | cut -d "$TAB" -f 1)
 if [ $HEADER != "#SampleID" ]; then
 	echo -e "\nERROR: $METADATA format is incorrect (First column name should be '#SampleID'), please check"
@@ -468,7 +466,7 @@ for i in 2 3 4 5 6 7; do
 done
 
 #### Removes everything but final taxonomic level
-for i in $(ls $OUTWD/otu_table_level*); do
+for i in $(ls $OUTWD/otu_table_level* | xargs -n 1 basename); do
 	sed -i '1d;s/^#//' $OUTWD/$i
 	sed -i 's/ /_/g' $OUTWD/$i 
 	awk '{print $1}' $OUTWD/$i > $OUTWD/temp-$i
