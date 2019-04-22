@@ -11,6 +11,7 @@
   * [Usage](#usage)
   * [Metadata](#metadata)  
   * [Output](#output)
+  * [Already using Qiime2?](#already-using-qiime2)
   * [Citation](#citation)
   * [License](#license)
 
@@ -119,6 +120,37 @@ QiimeReporter stores every file generated during the analysis in three different
 <br>
 
 Once the analysis is finished, QiimeReporter summarizes the results in a interactive html report in your output directory.
+
+<br>
+
+## Already using Qiime2? 
+
+Previous [Qiime2](https://github.com/qiime2/qiime2) users can convert their results to be used with QiimeReporter.
+
+```
+usage: qiimereporter-format <options>
+
+OBLIGATORY OPTIONS:
+	-i/--input 	Path to the directory where the files are located
+	-m/--metadata	Path to the Qiime2 metadata file
+OTHER OPTIONS:
+	-t/--threads	Number of threads to use if tree option is passed (default=$CPUS) <integer>
+	--tree		Pass this option to create a tree
+	
+Please be sure that stats-dada2.qza, table.qza, taxonomy.qza, and tree.nwk are in the input directory 
+before proceeding
+
+If you have not created the tree, please also copy the rep-seqs.qza file into the input directory 
+and pass the option --tree 
+
+```
+<br>
+
+Example:
+
+```
+qiimereporter-format -i qiime2_files -m sample-metadata.tsv -t 32
+```
 
 <br>
 
