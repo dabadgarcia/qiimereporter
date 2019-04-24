@@ -201,22 +201,22 @@ rm -f temp1
 rm -f temp2
 
 ## Exporting
-qiime tools export --input-path $INWD/stats-dada2.qza --output-path $INWD/exported-feature-table
-qiime tools export --input-path $INWD/table.qza --output-path $INWD/exported-feature-table
-qiime tools export --input-path $INWD/taxonomy.qza --output-path $INWD/exported-feature-table
+qiime tools export --input-path $INWD/stats-dada2.qza --output-path $INWD/exported-feature-table >> $INWD/format.log
+qiime tools export --input-path $INWD/table.qza --output-path $INWD/exported-feature-table >> $INWD/format.log
+qiime tools export --input-path $INWD/taxonomy.qza --output-path $INWD/exported-feature-table >> $INWD/format.log
 sed  's/Feature ID\tTaxon\tConfidence/#OTUID\ttaxonomy\tconfidence/g' $INWD/exported-feature-table/taxonomy.tsv > $INWD/exported-feature-table/biom-taxonomy.tsv
-biom add-metadata -i $INWD/exported-feature-table/feature-table.biom -o $INWD/table-with-taxonomy.biom --observation-metadata-fp $INWD/exported-feature-table/biom-taxonomy.tsv --sc-separated taxonomy 
+biom add-metadata -i $INWD/exported-feature-table/feature-table.biom -o $INWD/table-with-taxonomy.biom --observation-metadata-fp $INWD/exported-feature-table/biom-taxonomy.tsv --sc-separated taxonomy >> $INWD/format.log
 
 if [ "$TREE" == '1' ]; then
 
 ## Tree generation
-echo -e "Tree generation started at: \c" 
-date +"%Y-%m-%d %H:%M" 
-qiime alignment mafft --i-sequences $INWD/rep-seqs.qza --o-alignment $INWD/aligned-rep-seqs.qza --p-n-threads $CPUS 
-qiime alignment mask --i-alignment $INWD/aligned-rep-seqs.qza --o-masked-alignment $INWD/masked-aligned-rep-seqs.qza 
-qiime phylogeny fasttree --i-alignment $INWD/masked-aligned-rep-seqs.qza --o-tree $INWD/unrooted-tree.qza --p-n-threads $CPUS 
-qiime phylogeny midpoint-root --i-tree $INWD/unrooted-tree.qza --o-rooted-tree $INWD/rooted-tree.qza 
-qiime tools export --input-path $INWD/rooted-tree.qza --output-path $INWD/exported-feature-table
+echo -e "Tree generation started at: \c" >> $INWD/format.log
+date +"%Y-%m-%d %H:%M" >> $INWD/format.log
+qiime alignment mafft --i-sequences $INWD/rep-seqs.qza --o-alignment $INWD/aligned-rep-seqs.qza --p-n-threads $CPUS >> $INWD/format.log
+qiime alignment mask --i-alignment $INWD/aligned-rep-seqs.qza --o-masked-alignment $INWD/masked-aligned-rep-seqs.qza >> $INWD/format.log
+qiime phylogeny fasttree --i-alignment $INWD/masked-aligned-rep-seqs.qza --o-tree $INWD/unrooted-tree.qza --p-n-threads $CPUS >> $INWD/format.log
+qiime phylogeny midpoint-root --i-tree $INWD/unrooted-tree.qza --o-rooted-tree $INWD/rooted-tree.qza >> $INWD/format.log
+qiime tools export --input-path $INWD/rooted-tree.qza --output-path $INWD/exported-feature-table >> $INWD/format.log
 
 fi
 
@@ -233,9 +233,9 @@ rm $INWD/metadata-temp.tsv
 ### OTU tables
 #### Extract all levels from qiime2 results
 for i in 2 3 4 5 6 7; do
-	qiime taxa collapse --i-table $INWD/table.qza --i-taxonomy $INWD/taxonomy.qza --p-level $i --o-collapsed-table $INWD/tablelevel-$i.qza
-	qiime tools export --input-path $INWD/tablelevel-$i.qza --output-path $INWD/exported-feature-table-$i 
-	biom convert -i $INWD/exported-feature-table-$i/feature-table.biom -o $INWD/otu_table_level-$i.txt --to-tsv
+	qiime taxa collapse --i-table $INWD/table.qza --i-taxonomy $INWD/taxonomy.qza --p-level $i --o-collapsed-table $INWD/tablelevel-$i.qza >> $INWD/format.log
+	qiime tools export --input-path $INWD/tablelevel-$i.qza --output-path $INWD/exported-feature-table-$i >> $INWD/format.log
+	biom convert -i $INWD/exported-feature-table-$i/feature-table.biom -o $INWD/otu_table_level-$i.txt --to-tsv >> $INWD/format.log
 	rm -r $INWD/exported-feature-table-$i
 	rm $INWD/tablelevel-$i.qza
 done
@@ -268,7 +268,7 @@ mv $INWD/sample-info.tsv $INWD/report_files/
 
 ## Converting biom file to json for phyloseq
 
-biom convert -i $INWD/report_files/table-with-taxonomy_nc.biom -o $INWD/report_files/table-with-taxonomy.biom --table-type="OTU table" --to-json
+biom convert -i $INWD/report_files/table-with-taxonomy_nc.biom -o $INWD/report_files/table-with-taxonomy.biom --table-type="OTU table" --to-json >> $INWD/format.log
 rm $INWD/report_files/table-with-taxonomy_nc.biom
 
 ## Final details
