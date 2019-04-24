@@ -48,6 +48,7 @@ METADATA=
 MULTI=0
 OUTPUT=
 OUTWD=
+REPDIR=
 TAB="$(printf '\t')"
 TITLEFILE=
 TITLE=
@@ -84,9 +85,10 @@ OTHER OPTIONS:
 	--no-pcoa	Excludes the pcoa figures from the report
 	--no-rarefactionExcludes the rarefaction curves from the report
 	--multivariate	Includes other multivariate analysis in the report (NMDS, DCA, CCA, RCA)
-	--report-only	To generate only html report document, must be executed in the report_files directory
+	--report-only	To generate only the report (must be used with --report-dir option) 
+	--report-dir 	Path to the directory containing the report_files folder
 	-r/--reverse	Truncates length of the reverse reads (default='0')
-	-t/--threads	Number of threads to use (default=$CPUS) <integer>
+	-t/--threads	Number of threads to use (default='1') <integer>
 	--title		Path to a file containing the title of the report, avoid using special characters 
 			QiimeReporter will use a default title if this option is not passed
 	-v/--version	Show version
@@ -259,6 +261,15 @@ case $ARGS in
             DOREP=0
             shift
             ;;
+	--report-dir)
+	    if [ "$2" ]; then
+                REPDIR=$2
+                shift 2
+            else
+                echo -e '\nERROR: "--report-dir" requires an argument\n'
+                exit 1
+            fi
+            ;;
 	-r|--reverse)
             if [ "$2" -eq "$2"  ] 2>/dev/null ; then
                 TRUNR=$2
@@ -314,6 +325,18 @@ case $ARGS in
 esac
 done
 set -- "${POSITIONAL[@]}" #restore positional parameters
+
+# REPORT ONLY CONDITIONAL
+if [ "$DOREP" == '0' ]; then
+if [ -z "$REPDIR" ]; then
+	echo ""
+	if [ -z "$REPDIR" ]; then
+           echo 'ERROR: "--report-dir" option is needed!'
+        fi
+	echo ""
+	exit 1
+fi
+fi
 
 # REPORT ONLY CONDITIONAL
 if [ "$DOREP" == '1' ]; then
@@ -480,9 +503,9 @@ done
 
 ## Create report_files folder
 mkdir $OUTWD/report_files
-mv $OUTWD/table-with-taxonomy.biom $OUTWD/report_filestable-with-taxonomy_nc.biom 
+mv $OUTWD/table-with-taxonomy.biom $OUTWD/report_files/table-with-taxonomy_nc.biom 
 mv $OUTWD/exported-feature-table/tree.nwk $OUTWD/report_files/tree.nwk
-mv $OUTWD/final-otu_table_* $OUTWD/report_files/final-otu_table_*
+mv $OUTWD/final-otu_table_* $OUTWD/report_files/
 mv $OUTWD/sample-info.tsv $OUTWD/report_files/sample-info.tsv
 if [ -e "$TITLEFILE" ]; then
 mv $TITLEFILE $OUTWD/report_files/$TITLEFILE
@@ -493,7 +516,13 @@ fi
 biom convert -i $OUTWD/report_files/table-with-taxonomy_nc.biom -o $OUTWD/report_files/table-with-taxonomy.biom --table-type="OTU table" --to-json
 rm $OUTWD/report_files/table-with-taxonomy_nc.biom
 
-fi
+fi 
+
+# REPORT ONLY CONDITIONAL 
+if [ "$DOREP" == '0' ]; then
+OUTEMP="$( cd -P "$( dirname "$REPDIR" )" && pwd )"
+OUTWD="$OUTEMP/$REPDIR"
+fi 
 
 #Creating the RMD file
 
@@ -1199,19 +1228,12 @@ EOF
 fi
 
 # Executing de Rmd
-if [ "$DOREP" == '1' ]; then
-	echo -e "Rscript -e 'library(rmarkdown); rmarkdown::render(\"$OUTWD/report_files/report.Rmd\", \"html_document\", encoding=\"UTF-8\")'" > $OUTWD/report_files/report.sh
-	chmod 755 $OUTWD/report_files/report.sh 
-	./report.sh &>$OUTWD/report_files/report.log
-	rm $OUTWD/report_files/report.sh
-else 
-	echo -e "Rscript -e 'library(rmarkdown); rmarkdown::render(\"report.Rmd\", \"html_document\", encoding=\"UTF-8\")'" > report.sh
-	chmod 755 report.sh 
-	./report.sh &>report.log
-	rm report.sh
-fi
+echo -e "Rscript -e 'library(rmarkdown); rmarkdown::render(\"$OUTWD/report_files/report.Rmd\", \"html_document\", encoding=\"UTF-8\")'" > $OUTWD/report_files/report.sh
+chmod 755 $OUTWD/report_files/report.sh 
+$OUTWD/report_files/./report.sh &>$OUTWD/report_files/report.log
+rm $OUTWD/report_files/report.sh
 
-if [ -s report.html ]; then
+if [ -s $OUTWD/report_files/report.html ]; then
 	mv $OUTWD/report_files/report.html $OUTWD/report.html
 else
 	echo
@@ -1221,7 +1243,6 @@ fi
 end=`date +%s`
 
 # Final details
-# rm report.Rmd
 
 if [ "$DOREP" == '1' ]; then
 mkdir $OUTWD/qiime2_artifacts
