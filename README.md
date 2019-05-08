@@ -11,6 +11,7 @@
   * [Usage](#usage)
   * [Metadata](#metadata)  
   * [Output](#output)
+  * [Already using Qiime2?](#already-using-qiime2)
   * [Citation](#citation)
   * [License](#license)
 
@@ -65,6 +66,7 @@ OTHER OPTIONS:
 	--citation	Show citation
 	--color 	Color multivariate analysis from a categorical variable in sample-metadata 
 	-d/--database 	Path to prefered database, must be .qza file (default SILVA132)
+	--depth		Minimun number of reads for a sample to be included in the rarefaction figure
 	-f/--forward	Truncates length of the forward reads (default='0')
 	-h/--help	Show this help
 	--no-diversity	Excludes the diversity index figures from the report
@@ -91,7 +93,7 @@ qiimereporter -i raw_reads -m sample-metadata.tsv --output output_folder -t 32
 
 ## Metadata
 
-A metadata text file is needed for QiimeReporter to work by using the `-m/--metadata` option. This file will include all the information regarding the sample and requires an specific organization:  
+A Qiime2 metadata text file is needed for QiimeReporter to work by using the `-m/--metadata` option. This file will include all the information regarding the sample and requires an specific organization:  
 - Columns must be tab separated
 	- First row: 
 		- First column must me called "#SampleID" and harbor samples names (avoid special characters)
@@ -104,7 +106,7 @@ A metadata text file is needed for QiimeReporter to work by using the `-m/--meta
 
 <br>
 
-If you type `qiimereporter example-metadata`, a template file called `sample-metadata.tsv` will be created in your working directory.
+If you type `qiimereporter example-metadata`, a Qiime2 template file called `sample-metadata.tsv` will be created in your working directory. More information about the metadata file can be found [here](https://docs.qiime2.org/2018.8/tutorials/metadata/).
 
 <br>
 
@@ -118,6 +120,37 @@ QiimeReporter stores every file generated during the analysis in three different
 <br>
 
 Once the analysis is finished, QiimeReporter summarizes the results in a interactive html report in your output directory.
+
+<br>
+
+## Already using Qiime2? 
+
+Previous [Qiime2](https://github.com/qiime2/qiime2) users can convert their results to be used with QiimeReporter.
+
+```
+usage: qiimereporter-format <options>
+
+OBLIGATORY OPTIONS:
+	-i/--input 	Path to the directory where the files are located
+	-m/--metadata	Path to the Qiime2 metadata file
+OTHER OPTIONS:
+	-t/--threads	Number of threads to use if tree option is passed (default=$CPUS) <integer>
+	--tree		Pass this option to create a tree
+	
+Please be sure that stats-dada2.qza, table.qza, taxonomy.qza, and tree.nwk are in the input directory 
+before proceeding
+
+If you have not created the tree, please also copy the rep-seqs.qza file into the input directory 
+and pass the option --tree 
+
+```
+<br>
+
+Example:
+
+```
+qiimereporter-format -i qiime2_files -m sample-metadata.tsv -t 32
+```
 
 <br>
 
