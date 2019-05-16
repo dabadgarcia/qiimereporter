@@ -119,7 +119,7 @@ QiimeReporter stores every file generated during the analysis in three different
 
 <br>
 
-Once the analysis is finished, QiimeReporter summarizes the results in a interactive html report in your output directory.
+Once the analysis is finished, QiimeReporter summarizes the results in a interactive html report in your output directory. An example of the report file can be visualized [here](https://dabadgarcia.github.io/qiimereporter/example_report.html).
 
 <br>
 
