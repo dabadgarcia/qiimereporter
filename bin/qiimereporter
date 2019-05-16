@@ -1001,7 +1001,9 @@ otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
 otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
 
 # Plot PCoA
-PCoA(METRIC="braycurtis", FEATURES =  otutable_rn, METADATA = table) + ggtitle("Exploratory PCoA of Bray Curtis Dissimilarities")
+pcoa <- PCoA(METRIC="braycurtis", FEATURES =  otutable_rn, METADATA = table) + ggtitle("Exploratory PCoA of Bray Curtis Dissimilarities")
+pcoa <- pcoa + geom_point(aes(color = Description), size = 3) + geom_text(aes(label = rownames(table), color = Description),hjust=-.50, vjust=1, size = 2)
+plot(pcoa)
 \`\`\` 
 
 
@@ -1035,7 +1037,7 @@ cat << EOF >> $OUTWD/report_files/report.Rmd
 ##### NMDS
 \`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
 ## NMDS PLOT##
-p1 = plot_ordination(DOM, ordinate(DOM, "NMDS", "bray"), color = "$COLOR")     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = plot_ordination(DOM, ordinate(DOM, "NMDS", "bray"), color = "$COLOR")     
 p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
 ggplotly(p1, tooltip = c( "tipo", "x", "y"))
 \`\`\`
@@ -1043,7 +1045,7 @@ ggplotly(p1, tooltip = c( "tipo", "x", "y"))
 ##### DCA
 \`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
 ## NMDS PLOT##
-p1 = plot_ordination(DOM, ordinate(DOM, "DCA", "bray"), color = "$COLOR")     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = plot_ordination(DOM, ordinate(DOM, "DCA", "bray"), color = "$COLOR")     
 p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
 ggplotly(p1, tooltip = c( "tipo", "x", "y"))
 \`\`\`
@@ -1051,7 +1053,7 @@ ggplotly(p1, tooltip = c( "tipo", "x", "y"))
 ##### CCA
 \`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
 ## NMDS PLOT##
-p1 = plot_ordination(DOM, ordinate(DOM, "CCA", "bray"), color = "$COLOR")     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = plot_ordination(DOM, ordinate(DOM, "CCA", "bray"), color = "$COLOR")     
 p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
 ggplotly(p1, tooltip = c( "tipo", "x", "y"))
 \`\`\`
@@ -1091,7 +1093,7 @@ cat << EOF >> $OUTWD/report_files/report.Rmd
 ##### NMDS
 \`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
 ## NMDS PLOT##
-p1 = plot_ordination(DOM, ordinate(DOM, "NMDS", "bray"))     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = plot_ordination(DOM, ordinate(DOM, "NMDS", "bray"))     
 p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
 ggplotly(p1, tooltip = c( "tipo", "x", "y"))
 \`\`\`
@@ -1099,7 +1101,7 @@ ggplotly(p1, tooltip = c( "tipo", "x", "y"))
 ##### DCA
 \`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
 ## NMDS PLOT##
-p1 = plot_ordination(DOM, ordinate(DOM, "DCA", "bray"))     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = plot_ordination(DOM, ordinate(DOM, "DCA", "bray"))     
 p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
 ggplotly(p1, tooltip = c( "tipo", "x", "y"))
 \`\`\`
@@ -1107,7 +1109,7 @@ ggplotly(p1, tooltip = c( "tipo", "x", "y"))
 ##### CCA
 \`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
 ## NMDS PLOT##
-p1 = plot_ordination(DOM, ordinate(DOM, "CCA", "bray"))     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = plot_ordination(DOM, ordinate(DOM, "CCA", "bray"))     
 p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
 ggplotly(p1, tooltip = c( "tipo", "x", "y"))
 \`\`\`
@@ -1115,7 +1117,7 @@ ggplotly(p1, tooltip = c( "tipo", "x", "y"))
 ##### RDA
 \`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
 ## NMDS PLOT##
-p1 = plot_ordination(DOM, ordinate(DOM, "RDA", "bray"))     #, shape = 'Tipo', label = 'X.SampleID'
+p1 = plot_ordination(DOM, ordinate(DOM, "RDA", "bray"))     
 p1 = p1 + geom_point(size=4) + theme(legend.position="none") 
 ggplotly(p1, tooltip = c( "tipo", "x", "y"))
 \`\`\`
@@ -1134,7 +1136,6 @@ cat << EOF >> $OUTWD/report_files/report.Rmd
 p = plot_richness(DOM, color = "$COLOR", measures=c("Chao1"))
 p = p + geom_point(size=4) + theme(legend.position="none")
 ggplotly(p, tooltip = c( "samples", "value"))
-#plot_bar(DOM, fill = "Family")
 \`\`\`
 
 ##### Simpson
@@ -1142,7 +1143,6 @@ ggplotly(p, tooltip = c( "samples", "value"))
 p = plot_richness(DOM, color = "$COLOR", measures=c("Simpson"))
 p = p + geom_point(size=4) + theme(legend.position="none")
 ggplotly(p, tooltip = c( "samples", "value"))
-#plot_bar(DOM, fill = "Family")
 \`\`\`
 
 ##### Shannon
@@ -1150,7 +1150,6 @@ ggplotly(p, tooltip = c( "samples", "value"))
 p = plot_richness(DOM, color = "$COLOR", measures=c("Shannon"))
 p = p + geom_point(size=4) + theme(legend.position="none")
 ggplotly(p, tooltip = c( "samples", "value"))
-#plot_bar(DOM, fill = "Family")
 \`\`\`
 
 <br>
@@ -1167,7 +1166,6 @@ cat << EOF >> $OUTWD/report_files/report.Rmd
 p = plot_richness(DOM, measures=c("Chao1"))
 p = p + geom_point(size=4) + theme(legend.position="none")
 ggplotly(p, tooltip = c( "samples", "value"))
-#plot_bar(DOM, fill = "Family")
 \`\`\`
 
 ##### Simpson
@@ -1175,7 +1173,6 @@ ggplotly(p, tooltip = c( "samples", "value"))
 p = plot_richness(DOM, measures=c("Simpson"))
 p = p + geom_point(size=4) + theme(legend.position="none")
 ggplotly(p, tooltip = c( "samples", "value"))
-#plot_bar(DOM, fill = "Family")
 \`\`\`
 
 ##### Shannon
@@ -1183,7 +1180,6 @@ ggplotly(p, tooltip = c( "samples", "value"))
 p = plot_richness(DOM, measures=c("Shannon"))
 p = p + geom_point(size=4) + theme(legend.position="none")
 ggplotly(p, tooltip = c( "samples", "value"))
-#plot_bar(DOM, fill = "Family")
 \`\`\`
 
 <br>
