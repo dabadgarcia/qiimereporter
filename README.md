@@ -106,7 +106,7 @@ A Qiime2 metadata text file is needed for QiimeReporter to work by using the `-m
 
 <br>
 
-If you type `qiimereporter example-metadata`, a Qiime2 template file called `sample-metadata.tsv` will be created in your working directory. More information about the metadata file can be found [here](https://docs.qiime2.org/2018.8/tutorials/metadata/).
+If you type `qiimereporter example-metadata`, a Qiime2 template file called `sample-metadata.tsv` will be created in your working directory. You can also download the file [here](https://dabadgarcia.github.io/qiimereporter/sample-metadata.tsv). More information about metadata can be found [here](https://docs.qiime2.org/2018.8/tutorials/metadata/).
 
 <br>
 
@@ -143,6 +143,8 @@ before proceeding
 If you have not created the tree, please also copy the rep-seqs.qza file into the input directory 
 and pass the option --tree 
 
+After formatting is completed, you should run qiimereporter with the option --report-only to create the html report. 
+
 ```
 <br>
 
@@ -150,6 +152,8 @@ Example:
 
 ```
 qiimereporter-format -i qiime2_files -m sample-metadata.tsv -t 32
+
+qiimereporter --report-only
 ```
 
 <br>
@@ -158,7 +162,7 @@ qiimereporter-format -i qiime2_files -m sample-metadata.tsv -t 32
 
 If you use QiimeReporter before publication is released, please cite as:  
   
-David Abad and Marta Hernandez. QiimeReporter. (2019) https://github.com/dabadgarcia/qiimereporter
+David Abad, Narciso M. Quijada and Marta Hernandez. QiimeReporter. (2019) https://github.com/dabadgarcia/qiimereporter
 
 Users are also highly encouraged to cite [Qiime2](https://github.com/qiime2/qiime2) and [R](https://cran.r-project.org/) when using QiimeReporter.
 
