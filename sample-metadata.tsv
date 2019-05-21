@@ -1,0 +1,4 @@
+#SampleID	BarcodeSequence	LinkerPrimerSequence	Description	
+#q2:types	categorical	categorical	categorical	
+Sample1			Description1
+Sample2			Description2
