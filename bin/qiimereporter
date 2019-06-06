@@ -43,6 +43,7 @@ DONET=1
 DOPCOA=1
 DORAR=1
 DOREP=1
+GROUP=
 INPUT=
 METADATA=
 MULTI=0
@@ -78,6 +79,7 @@ OTHER OPTIONS:
 	-d/--database 	Path to prefered database, must be .qza file (default SILVA132)
 	--depth		Minimun number of reads for a sample to be included in the rarefaction figure
 	-f/--forward	Truncates length of the forward reads (default='0')
+	--group 	Column number of the variable in sample-metadata to group the taxa-bar-plot 
 	-h/--help	Show this help
 	--no-diversity	Excludes the diversity index figures from the report
 	--no-heatmap	Excludes the heatmap from the report
@@ -187,6 +189,15 @@ case $ARGS in
             else
                 echo -e '\nERROR: "--forward" requires a numeric argument'
                 echo -e "argument parsed: $2 \n"
+                exit 1
+            fi
+            ;;
+	--group)
+	    if [ "$2" ]; then
+                GROUP=$2
+                shift 2
+            else
+                echo -e '\nERROR: "--group" requires an argument\n'
                 exit 1
             fi
             ;;
@@ -877,6 +888,10 @@ Nice.Table(abundantt)
 
 <br>
 
+EOF
+
+if [ "$GROUP" == '' ]; then
+cat << EOF >> $OUTWD/report_files/report.Rmd
 ## Taxonomic groups
 #### Select the taxonomic level {.tabset .tabset-fade .tabset-pills}
 ##### Phylum
@@ -938,6 +953,72 @@ ggplotly(p)
 <br>
 
 EOF
+fi
+
+if [ "$GROUP" ]; then
+cat << EOF >> $OUTWD/report_files/report.Rmd
+## Taxonomic groups
+#### Select the taxonomic level {.tabset .tabset-fade .tabset-pills}
+##### Phylum
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-2.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+#Get grouping information
+grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
+
+#Apply proportion normalisation
+x<-rel_otutable
+x<-x[,order(colSums(x),decreasing=TRUE)]
+
+#Extract list of Taxa
+taxa_list<-colnames(x)
+N<-length(taxa_list)
+
+#Create the plot
+df<-NULL
+for (i in 1:dim(x)[2]){
+  tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],GROUP=grouping_info[,$GROUP],TAXA=rep(colnames
+                                                                   (x)[i],dim(x)[1]),Value=x[,i])
+  if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
+}
+colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
+             "#FFA405","#66CCFF","#426600","orchid","thistle","#9DCC00",
+             "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
+             "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
+	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
+
+#steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
+
+library(ggplot2)
+p<-ggplot(df,aes(SAMPLE,Value,fill=TAXA))+geom_bar(stat="identity")+facet_grid(. ~ GROUP, drop=TRUE,scale="free",space="free_x")
+p<-p+scale_fill_manual(values=colours[1:(N+1)], "")
+p<-p+theme_bw()+ylab("ABUNDANCE")
+p<-p+ scale_y_continuous(expand = c(0,0))+theme(strip.background = element_rect(fill="gray85"))+theme(panel.margin = unit(0.4, "lines"))
+p<-p+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+p<-p+ theme(legend.position = "bottom") 
+p<-p+ theme(axis.title.x = element_blank())
+ggplotly(p)
+\`\`\` 
+
+<br>
+
+EOF
+fi
 
 if [ "$DOPCOA" == '1' ] && [ "$COLOR" ]; then
 cat << EOF >> $OUTWD/report_files/report.Rmd
@@ -1002,7 +1083,7 @@ otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
 
 # Plot PCoA
 pcoa <- PCoA(METRIC="braycurtis", FEATURES =  otutable_rn, METADATA = table) + ggtitle("Exploratory PCoA of Bray Curtis Dissimilarities")
-pcoa <- pcoa + geom_point(aes(color = Description), size = 3) + geom_text(aes(label = rownames(table), color = Description),hjust=-.50, vjust=1, size = 2)
+pcoa <- pcoa + geom_point(aes(color = $COLOR), size = 3) + geom_text(aes(label = rownames(table), color = $COLOR),hjust=-.50, vjust=1, size = 2)
 plot(pcoa)
 \`\`\` 
 
@@ -1192,8 +1273,9 @@ cat << EOF >> $OUTWD/report_files/report.Rmd
 ## Heatmap
 \`\`\`{r echo=FALSE, message=FALSE, warning=FALSE}
 # Plot a heatmap
-p = plot_heatmap(DOM, method = "NMDS", distance = "bray", sample.label = NULL, taxa.label = NULL)
-p
+phylum = tax_glom(DOM, "Phylum")
+phyl = plot_heatmap(phylum, method = "PCoA", distance = "bray", sample.label = NULL, taxa.label = "Phylum")
+phyl
 \`\`\`
 
 <br>
