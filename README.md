@@ -68,6 +68,7 @@ OTHER OPTIONS:
 	-d/--database 	Path to prefered database, must be .qza file (default SILVA132)
 	--depth		Minimun number of reads for a sample to be included in the rarefaction figure
 	-f/--forward	Truncates length of the forward reads (default='0')
+	--group 	Column number of the variable in sample-metadata to group the taxa-bar-plot 
 	-h/--help	Show this help
 	--no-diversity	Excludes the diversity index figures from the report
 	--no-heatmap	Excludes the heatmap from the report
