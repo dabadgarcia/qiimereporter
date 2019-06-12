@@ -920,19 +920,323 @@ grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
 x<-rel_otutable
 x<-x[,order(colSums(x),decreasing=TRUE)]
 
-#Extract list of Taxa
-taxa_list<-colnames(x)
+#Extract list of top N Taxa
+N<-11
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
+
+#Generate a new table with everything added to Others
+new_x<-data.frame(x[,colnames(x) %in% taxa_list],Others=rowSums(x[,!colnames(x) %in% taxa_list]))
 
 #Create the plot
 df<-NULL
-for (i in 1:dim(x)[2]){
+for (i in 1:dim(new_x)[2]){
   tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],TAXA=rep(colnames
-                                                                   (x)[i],dim(x)[1]),Value=x[,i])
+                                                                   (new_x)[i],dim(new_x)[1]),Value=new_x[,i])
   if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
 }
 colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
-             "#FFA405","#66CCFF","#426600","orchid","thistle","#9DCC00",
+             "#FFA405","#66CCFF","#426600","orchid","#9DCC00","thistle",
+             "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
+             "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
+	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
+
+#steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
+
+library(ggplot2)
+p<-ggplot(df,aes(SAMPLE,Value,fill=TAXA))+geom_bar(stat="identity")
+p<-p+scale_fill_manual(values=colours[1:(N+1)], "")
+p<-p+theme_bw()+ylab("ABUNDANCE")
+p<-p+ scale_y_continuous(expand = c(0,0))+theme(strip.background = element_rect(fill="gray85"))+theme(panel.margin = unit(0.4, "lines"))
+p<-p+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+p<-p+ theme(legend.position = "bottom") 
+p<-p+ theme(axis.title.x = element_blank())
+ggplotly(p)
+\`\`\` 
+
+##### Class
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-3.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+#Get grouping information
+grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
+
+#Apply proportion normalisation
+x<-rel_otutable
+x<-x[,order(colSums(x),decreasing=TRUE)]
+
+#Extract list of top N Taxa
+N<-11
+taxa_list<-colnames(x)[1:N]
+N<-length(taxa_list)
+
+#Generate a new table with everything added to Others
+new_x<-data.frame(x[,colnames(x) %in% taxa_list],Others=rowSums(x[,!colnames(x) %in% taxa_list]))
+
+#Create the plot
+df<-NULL
+for (i in 1:dim(new_x)[2]){
+  tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],TAXA=rep(colnames
+                                                                   (new_x)[i],dim(new_x)[1]),Value=new_x[,i])
+  if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
+}
+colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
+             "#FFA405","#66CCFF","#426600","orchid","#9DCC00","thistle",
+             "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
+             "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
+	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
+
+#steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
+
+library(ggplot2)
+p<-ggplot(df,aes(SAMPLE,Value,fill=TAXA))+geom_bar(stat="identity")
+p<-p+scale_fill_manual(values=colours[1:(N+1)], "")
+p<-p+theme_bw()+ylab("ABUNDANCE")
+p<-p+ scale_y_continuous(expand = c(0,0))+theme(strip.background = element_rect(fill="gray85"))+theme(panel.margin = unit(0.4, "lines"))
+p<-p+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+p<-p+ theme(legend.position = "bottom") 
+p<-p+ theme(axis.title.x = element_blank())
+ggplotly(p)
+\`\`\` 
+
+##### Order
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-4.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+#Get grouping information
+grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
+
+#Apply proportion normalisation
+x<-rel_otutable
+x<-x[,order(colSums(x),decreasing=TRUE)]
+
+#Extract list of top N Taxa
+N<-11
+taxa_list<-colnames(x)[1:N]
+N<-length(taxa_list)
+
+#Generate a new table with everything added to Others
+new_x<-data.frame(x[,colnames(x) %in% taxa_list],Others=rowSums(x[,!colnames(x) %in% taxa_list]))
+
+#Create the plot
+df<-NULL
+for (i in 1:dim(new_x)[2]){
+  tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],TAXA=rep(colnames
+                                                                   (new_x)[i],dim(new_x)[1]),Value=new_x[,i])
+  if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
+}
+colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
+             "#FFA405","#66CCFF","#426600","orchid","#9DCC00","thistle",
+             "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
+             "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
+	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
+
+#steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
+
+library(ggplot2)
+p<-ggplot(df,aes(SAMPLE,Value,fill=TAXA))+geom_bar(stat="identity")
+p<-p+scale_fill_manual(values=colours[1:(N+1)], "")
+p<-p+theme_bw()+ylab("ABUNDANCE")
+p<-p+ scale_y_continuous(expand = c(0,0))+theme(strip.background = element_rect(fill="gray85"))+theme(panel.margin = unit(0.4, "lines"))
+p<-p+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+p<-p+ theme(legend.position = "bottom") 
+p<-p+ theme(axis.title.x = element_blank())
+ggplotly(p)
+\`\`\` 
+
+##### Family
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-5.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+#Get grouping information
+grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
+
+#Apply proportion normalisation
+x<-rel_otutable
+x<-x[,order(colSums(x),decreasing=TRUE)]
+
+#Extract list of top N Taxa
+N<-11
+taxa_list<-colnames(x)[1:N]
+N<-length(taxa_list)
+
+#Generate a new table with everything added to Others
+new_x<-data.frame(x[,colnames(x) %in% taxa_list],Others=rowSums(x[,!colnames(x) %in% taxa_list]))
+
+#Create the plot
+df<-NULL
+for (i in 1:dim(new_x)[2]){
+  tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],TAXA=rep(colnames
+                                                                   (new_x)[i],dim(new_x)[1]),Value=new_x[,i])
+  if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
+}
+colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
+             "#FFA405","#66CCFF","#426600","orchid","#9DCC00","thistle",
+             "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
+             "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
+	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
+
+#steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
+
+library(ggplot2)
+p<-ggplot(df,aes(SAMPLE,Value,fill=TAXA))+geom_bar(stat="identity")
+p<-p+scale_fill_manual(values=colours[1:(N+1)], "")
+p<-p+theme_bw()+ylab("ABUNDANCE")
+p<-p+ scale_y_continuous(expand = c(0,0))+theme(strip.background = element_rect(fill="gray85"))+theme(panel.margin = unit(0.4, "lines"))
+p<-p+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+p<-p+ theme(legend.position = "bottom") 
+p<-p+ theme(axis.title.x = element_blank())
+ggplotly(p)
+\`\`\` 
+
+##### Genus 
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-6.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+#Get grouping information
+grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
+
+#Apply proportion normalisation
+x<-rel_otutable
+x<-x[,order(colSums(x),decreasing=TRUE)]
+
+#Extract list of top N Taxa
+N<-11
+taxa_list<-colnames(x)[1:N]
+N<-length(taxa_list)
+
+#Generate a new table with everything added to Others
+new_x<-data.frame(x[,colnames(x) %in% taxa_list],Others=rowSums(x[,!colnames(x) %in% taxa_list]))
+
+#Create the plot
+df<-NULL
+for (i in 1:dim(new_x)[2]){
+  tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],TAXA=rep(colnames
+                                                                   (new_x)[i],dim(new_x)[1]),Value=new_x[,i])
+  if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
+}
+colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
+             "#FFA405","#66CCFF","#426600","orchid","#9DCC00","thistle",
+             "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
+             "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
+	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
+
+#steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
+
+library(ggplot2)
+p<-ggplot(df,aes(SAMPLE,Value,fill=TAXA))+geom_bar(stat="identity")
+p<-p+scale_fill_manual(values=colours[1:(N+1)], "")
+p<-p+theme_bw()+ylab("ABUNDANCE")
+p<-p+ scale_y_continuous(expand = c(0,0))+theme(strip.background = element_rect(fill="gray85"))+theme(panel.margin = unit(0.4, "lines"))
+p<-p+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+p<-p+ theme(legend.position = "bottom") 
+p<-p+ theme(axis.title.x = element_blank())
+ggplotly(p)
+\`\`\` 
+
+##### Species
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-7.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+#Get grouping information
+grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
+
+#Apply proportion normalisation
+x<-rel_otutable
+x<-x[,order(colSums(x),decreasing=TRUE)]
+
+#Extract list of top N Taxa
+N<-11
+taxa_list<-colnames(x)[1:N]
+N<-length(taxa_list)
+
+#Generate a new table with everything added to Others
+new_x<-data.frame(x[,colnames(x) %in% taxa_list],Others=rowSums(x[,!colnames(x) %in% taxa_list]))
+
+#Create the plot
+df<-NULL
+for (i in 1:dim(new_x)[2]){
+  tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],TAXA=rep(colnames
+                                                                   (new_x)[i],dim(new_x)[1]),Value=new_x[,i])
+  if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
+}
+colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
+             "#FFA405","#66CCFF","#426600","orchid","#9DCC00","thistle",
              "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
              "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
 	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
@@ -985,19 +1289,323 @@ grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
 x<-rel_otutable
 x<-x[,order(colSums(x),decreasing=TRUE)]
 
-#Extract list of Taxa
-taxa_list<-colnames(x)
+#Extract list of top N Taxa
+N<-11
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
+
+#Generate a new table with everything added to Others
+new_x<-data.frame(x[,colnames(x) %in% taxa_list],Others=rowSums(x[,!colnames(x) %in% taxa_list]))
 
 #Create the plot
 df<-NULL
-for (i in 1:dim(x)[2]){
+for (i in 1:dim(new_x)[2]){
   tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],GROUP=grouping_info[,$GROUP],TAXA=rep(colnames
-                                                                   (x)[i],dim(x)[1]),Value=x[,i])
+                                                                   (new_x)[i],dim(new_x)[1]),Value=new_x[,i])
   if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
 }
 colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
-             "#FFA405","#66CCFF","#426600","orchid","thistle","#9DCC00",
+             "#FFA405","#66CCFF","#426600","orchid","#9DCC00","thistle",
+             "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
+             "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
+	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
+
+#steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
+
+library(ggplot2)
+p<-ggplot(df,aes(SAMPLE,Value,fill=TAXA))+geom_bar(stat="identity")+facet_grid(. ~ GROUP, drop=TRUE,scale="free",space="free_x")
+p<-p+scale_fill_manual(values=colours[1:(N+1)], "")
+p<-p+theme_bw()+ylab("ABUNDANCE")
+p<-p+ scale_y_continuous(expand = c(0,0))+theme(strip.background = element_rect(fill="gray85"))+theme(panel.margin = unit(0.4, "lines"))
+p<-p+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+p<-p+ theme(legend.position = "bottom") 
+p<-p+ theme(axis.title.x = element_blank())
+ggplotly(p)
+\`\`\` 
+
+##### Class
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-3.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+#Get grouping information
+grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
+
+#Apply proportion normalisation
+x<-rel_otutable
+x<-x[,order(colSums(x),decreasing=TRUE)]
+
+#Extract list of top N Taxa
+N<-11
+taxa_list<-colnames(x)[1:N]
+N<-length(taxa_list)
+
+#Generate a new table with everything added to Others
+new_x<-data.frame(x[,colnames(x) %in% taxa_list],Others=rowSums(x[,!colnames(x) %in% taxa_list]))
+
+#Create the plot
+df<-NULL
+for (i in 1:dim(new_x)[2]){
+  tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],GROUP=grouping_info[,$GROUP],TAXA=rep(colnames
+                                                                   (new_x)[i],dim(new_x)[1]),Value=new_x[,i])
+  if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
+}
+colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
+             "#FFA405","#66CCFF","#426600","orchid","#9DCC00","thistle",
+             "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
+             "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
+	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
+
+#steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
+
+library(ggplot2)
+p<-ggplot(df,aes(SAMPLE,Value,fill=TAXA))+geom_bar(stat="identity")+facet_grid(. ~ GROUP, drop=TRUE,scale="free",space="free_x")
+p<-p+scale_fill_manual(values=colours[1:(N+1)], "")
+p<-p+theme_bw()+ylab("ABUNDANCE")
+p<-p+ scale_y_continuous(expand = c(0,0))+theme(strip.background = element_rect(fill="gray85"))+theme(panel.margin = unit(0.4, "lines"))
+p<-p+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+p<-p+ theme(legend.position = "bottom") 
+p<-p+ theme(axis.title.x = element_blank())
+ggplotly(p)
+\`\`\` 
+
+##### Order
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-4.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+#Get grouping information
+grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
+
+#Apply proportion normalisation
+x<-rel_otutable
+x<-x[,order(colSums(x),decreasing=TRUE)]
+
+#Extract list of top N Taxa
+N<-11
+taxa_list<-colnames(x)[1:N]
+N<-length(taxa_list)
+
+#Generate a new table with everything added to Others
+new_x<-data.frame(x[,colnames(x) %in% taxa_list],Others=rowSums(x[,!colnames(x) %in% taxa_list]))
+
+#Create the plot
+df<-NULL
+for (i in 1:dim(new_x)[2]){
+  tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],GROUP=grouping_info[,$GROUP],TAXA=rep(colnames
+                                                                   (new_x)[i],dim(new_x)[1]),Value=new_x[,i])
+  if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
+}
+colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
+             "#FFA405","#66CCFF","#426600","orchid","#9DCC00","thistle",
+             "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
+             "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
+	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
+
+#steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
+
+library(ggplot2)
+p<-ggplot(df,aes(SAMPLE,Value,fill=TAXA))+geom_bar(stat="identity")+facet_grid(. ~ GROUP, drop=TRUE,scale="free",space="free_x")
+p<-p+scale_fill_manual(values=colours[1:(N+1)], "")
+p<-p+theme_bw()+ylab("ABUNDANCE")
+p<-p+ scale_y_continuous(expand = c(0,0))+theme(strip.background = element_rect(fill="gray85"))+theme(panel.margin = unit(0.4, "lines"))
+p<-p+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+p<-p+ theme(legend.position = "bottom") 
+p<-p+ theme(axis.title.x = element_blank())
+ggplotly(p)
+\`\`\` 
+
+##### Family
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-5.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+#Get grouping information
+grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
+
+#Apply proportion normalisation
+x<-rel_otutable
+x<-x[,order(colSums(x),decreasing=TRUE)]
+
+#Extract list of top N Taxa
+N<-11
+taxa_list<-colnames(x)[1:N]
+N<-length(taxa_list)
+
+#Generate a new table with everything added to Others
+new_x<-data.frame(x[,colnames(x) %in% taxa_list],Others=rowSums(x[,!colnames(x) %in% taxa_list]))
+
+#Create the plot
+df<-NULL
+for (i in 1:dim(new_x)[2]){
+  tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],GROUP=grouping_info[,$GROUP],TAXA=rep(colnames
+                                                                   (new_x)[i],dim(new_x)[1]),Value=new_x[,i])
+  if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
+}
+colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
+             "#FFA405","#66CCFF","#426600","orchid","#9DCC00","thistle",
+             "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
+             "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
+	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
+
+#steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
+
+library(ggplot2)
+p<-ggplot(df,aes(SAMPLE,Value,fill=TAXA))+geom_bar(stat="identity")+facet_grid(. ~ GROUP, drop=TRUE,scale="free",space="free_x")
+p<-p+scale_fill_manual(values=colours[1:(N+1)], "")
+p<-p+theme_bw()+ylab("ABUNDANCE")
+p<-p+ scale_y_continuous(expand = c(0,0))+theme(strip.background = element_rect(fill="gray85"))+theme(panel.margin = unit(0.4, "lines"))
+p<-p+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+p<-p+ theme(legend.position = "bottom") 
+p<-p+ theme(axis.title.x = element_blank())
+ggplotly(p)
+\`\`\` 
+
+##### Genus
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-6.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+#Get grouping information
+grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
+
+#Apply proportion normalisation
+x<-rel_otutable
+x<-x[,order(colSums(x),decreasing=TRUE)]
+
+#Extract list of top N Taxa
+N<-11
+taxa_list<-colnames(x)[1:N]
+N<-length(taxa_list)
+
+#Generate a new table with everything added to Others
+new_x<-data.frame(x[,colnames(x) %in% taxa_list],Others=rowSums(x[,!colnames(x) %in% taxa_list]))
+
+#Create the plot
+df<-NULL
+for (i in 1:dim(new_x)[2]){
+  tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],GROUP=grouping_info[,$GROUP],TAXA=rep(colnames
+                                                                   (new_x)[i],dim(new_x)[1]),Value=new_x[,i])
+  if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
+}
+colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
+             "#FFA405","#66CCFF","#426600","orchid","#9DCC00","thistle",
+             "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
+             "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
+	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
+
+#steelblue, springgreen4, slategray, sienna3, burlywood4, paleturquoise, olivedrab, deepskyblue
+
+library(ggplot2)
+p<-ggplot(df,aes(SAMPLE,Value,fill=TAXA))+geom_bar(stat="identity")+facet_grid(. ~ GROUP, drop=TRUE,scale="free",space="free_x")
+p<-p+scale_fill_manual(values=colours[1:(N+1)], "")
+p<-p+theme_bw()+ylab("ABUNDANCE")
+p<-p+ scale_y_continuous(expand = c(0,0))+theme(strip.background = element_rect(fill="gray85"))+theme(panel.margin = unit(0.4, "lines"))
+p<-p+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+p<-p+ theme(legend.position = "bottom") 
+p<-p+ theme(axis.title.x = element_blank())
+ggplotly(p)
+\`\`\` 
+
+##### Species
+\`\`\`{r echo=FALSE, message=FALSE, warning=FALSE} 
+
+# Load the table without OTUs as row names
+otutable=read.table(file="final-otu_table_level-7.txt", header=T, row.names = NULL, dec=".", sep="\t")
+otutable\$X <- NULL
+
+# Sum values of duplicate OTUs
+otutable_nodup = otutable %>% group_by(OTU_ID) %>% summarise_all(funs(sum))
+
+# Convert the OTUs into row names
+otutable_rn = column_to_rownames(otutable_nodup, 'OTU_ID')
+
+# Transpose for relative abundance conversion
+otutablet=t(otutable_rn)
+
+# Convert to relative abundances
+rel_otutable=otutablet / rowSums(otutablet) * 100
+
+#Get grouping information
+grouping_info <- read.table(file = "sample-info.tsv", header = T, sep="\t")
+
+#Apply proportion normalisation
+x<-rel_otutable
+x<-x[,order(colSums(x),decreasing=TRUE)]
+
+#Extract list of top N Taxa
+N<-11
+taxa_list<-colnames(x)[1:N]
+N<-length(taxa_list)
+
+#Generate a new table with everything added to Others
+new_x<-data.frame(x[,colnames(x) %in% taxa_list],Others=rowSums(x[,!colnames(x) %in% taxa_list]))
+
+#Create the plot
+df<-NULL
+for (i in 1:dim(new_x)[2]){
+  tmp<-data.frame(row.names=NULL,SAMPLE=grouping_info[,1],GROUP=grouping_info[,$GROUP],TAXA=rep(colnames
+                                                                   (new_x)[i],dim(new_x)[1]),Value=new_x[,i])
+  if(i==1){df<-tmp} else {df<-rbind(df,tmp)}
+}
+colours <- c("#666699", "#0075DC","brown3","#8F7C00","#00998F","slateblue","lightgoldenrod3",
+             "#FFA405","#66CCFF","#426600","orchid","#9DCC00","thistle",
              "#740AFF","#990000","#FFFF00","#660000","#CC3300","#CC9900",
              "#9999FF","#CCCCCC","#F0A3FF","#FFFF99","#FF9966","#4C005C","#C20088",
 	"#003380","#993F00","#2BCE48","#FFCC99","#808080","#94FFB5","#FF0010","#5EF1F2");
@@ -1329,10 +1937,6 @@ rm -r $OUTWD/exported-feature-table
 mkdir $OUTWD/complete_taxonomy_otutables
 mv $OUTWD/otu_table_* $OUTWD/complete_taxonomy_otutables/
 fi
-
-if [ "$DOREP" == '0' ]; then
-rm -r $OUTWD/report_files/report_files
-fi 
 
 # Calculate the difference
 let time=${end}-${start}
