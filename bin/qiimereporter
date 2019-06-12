@@ -922,7 +922,7 @@ x<-x[,order(colSums(x),decreasing=TRUE)]
 
 #Extract list of top N Taxa
 N<-11
-taxa_list<-colnames(x)
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
 
 #Generate a new table with everything added to Others
@@ -982,7 +982,7 @@ x<-x[,order(colSums(x),decreasing=TRUE)]
 
 #Extract list of top N Taxa
 N<-11
-taxa_list<-colnames(x)
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
 
 #Generate a new table with everything added to Others
@@ -1042,7 +1042,7 @@ x<-x[,order(colSums(x),decreasing=TRUE)]
 
 #Extract list of top N Taxa
 N<-11
-taxa_list<-colnames(x)
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
 
 #Generate a new table with everything added to Others
@@ -1102,7 +1102,7 @@ x<-x[,order(colSums(x),decreasing=TRUE)]
 
 #Extract list of top N Taxa
 N<-11
-taxa_list<-colnames(x)
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
 
 #Generate a new table with everything added to Others
@@ -1162,7 +1162,7 @@ x<-x[,order(colSums(x),decreasing=TRUE)]
 
 #Extract list of top N Taxa
 N<-11
-taxa_list<-colnames(x)
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
 
 #Generate a new table with everything added to Others
@@ -1222,7 +1222,7 @@ x<-x[,order(colSums(x),decreasing=TRUE)]
 
 #Extract list of top N Taxa
 N<-11
-taxa_list<-colnames(x)
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
 
 #Generate a new table with everything added to Others
@@ -1291,7 +1291,7 @@ x<-x[,order(colSums(x),decreasing=TRUE)]
 
 #Extract list of top N Taxa
 N<-11
-taxa_list<-colnames(x)
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
 
 #Generate a new table with everything added to Others
@@ -1351,7 +1351,7 @@ x<-x[,order(colSums(x),decreasing=TRUE)]
 
 #Extract list of top N Taxa
 N<-11
-taxa_list<-colnames(x)
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
 
 #Generate a new table with everything added to Others
@@ -1411,7 +1411,7 @@ x<-x[,order(colSums(x),decreasing=TRUE)]
 
 #Extract list of top N Taxa
 N<-11
-taxa_list<-colnames(x)
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
 
 #Generate a new table with everything added to Others
@@ -1471,7 +1471,7 @@ x<-x[,order(colSums(x),decreasing=TRUE)]
 
 #Extract list of top N Taxa
 N<-11
-taxa_list<-colnames(x)
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
 
 #Generate a new table with everything added to Others
@@ -1531,7 +1531,7 @@ x<-x[,order(colSums(x),decreasing=TRUE)]
 
 #Extract list of top N Taxa
 N<-11
-taxa_list<-colnames(x)
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
 
 #Generate a new table with everything added to Others
@@ -1591,7 +1591,7 @@ x<-x[,order(colSums(x),decreasing=TRUE)]
 
 #Extract list of top N Taxa
 N<-11
-taxa_list<-colnames(x)
+taxa_list<-colnames(x)[1:N]
 N<-length(taxa_list)
 
 #Generate a new table with everything added to Others
@@ -1937,10 +1937,6 @@ rm -r $OUTWD/exported-feature-table
 mkdir $OUTWD/complete_taxonomy_otutables
 mv $OUTWD/otu_table_* $OUTWD/complete_taxonomy_otutables/
 fi
-
-if [ "$DOREP" == '0' ]; then
-rm -r $OUTWD/report_files/report_files
-fi 
 
 # Calculate the difference
 let time=${end}-${start}
