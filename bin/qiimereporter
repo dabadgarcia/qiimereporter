@@ -479,6 +479,11 @@ qiime phylogeny fasttree --i-alignment $OUTWD/masked-aligned-rep-seqs.qza --o-tr
 qiime phylogeny midpoint-root --i-tree $OUTWD/unrooted-tree.qza --o-rooted-tree $OUTWD/rooted-tree.qza >> $OUTWD/qiimereporter.log
 qiime tools export --input-path $OUTWD/rooted-tree.qza --output-path $OUTWD/exported-feature-table >> $OUTWD/qiimereporter.log
 
+## Diversity metrics
+echo -e "Diversity analysis started at: \c" >> $OUTWD/qiimereporter.log
+date +"%Y-%m-%d %H:%M" >> $OUTWD/qiimereporter.log
+qiime diversity core-metrics-phylogenetic --i-phylogeny $OUTWD/rooted-tree.qza --i-table $OUTWD/table.qza --p-sampling-depth $DEPTH --m-metadata-file $METADATA --output-dir $OUTWD/core-metrics-results
+
 ## Formatting files for report
 
 # Creating sample information file with read stats
@@ -1933,6 +1938,7 @@ end=`date +%s`
 if [ "$DOREP" == '1' ]; then
 mkdir $OUTWD/qiime2_artifacts
 mv $OUTWD/*.qza $OUTWD/qiime2_artifacts/
+mv $OUTWD/core-metrics-results $OUTWD/qiime2_artifacts/
 rm -r $OUTWD/exported-feature-table
 mkdir $OUTWD/complete_taxonomy_otutables
 mv $OUTWD/otu_table_* $OUTWD/complete_taxonomy_otutables/
