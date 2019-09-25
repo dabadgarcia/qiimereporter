@@ -33,9 +33,8 @@ Rscript -e 'install.packages("textshape",repos = "http://cran.us.r-project.org")
 Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/mvtnorm/mvtnorm_1.0-8.tar.gz", repos=NULL, type="source", dependencies = FALSE)'
 Rscript -e 'install.packages("heatmaply",repos = "http://cran.us.r-project.org")'
 Rscript -e 'install.packages("RSQLite",repos = "http://cran.us.r-project.org")'  
-Rscript -e 'install.packages("http://bioconductor.org/packages/release/bioc/src/contrib/DECIPHER_2.10.2.tar.gz", repos=NULL, type="source", dependencies = FALSE)'
+Rscript -e 'install.packages("http://bioconductor.org/packages/release/bioc/src/contrib/DECIPHER_2.12.0.tar.gz", repos=NULL, type="source", dependencies = FALSE)'
 Rscript -e 'library(devtools); devtools::install_github("gauravsk/ranacapa")'
-Rscript -e 'library(devtools); devtools::install_github("talgalili/installr")'
 Rscript -e 'library(devtools); devtools::install_github("jsilve24/philr")'
 Rscript -e 'library(devtools); devtools::install_github("jbisanz/MicrobeR")'
 
